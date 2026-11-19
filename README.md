@@ -36,5 +36,7 @@ La hoja `Descansos Quirama Fin de Año 2026` ya fue creada en tu carpeta de Goog
 ## Funciones principales
 
 - **Multi-dispositivo con bloqueo atómico:** `LockService` en Apps Script impide que dos celulares sorteen a la misma persona al mismo tiempo; todos los dispositivos se actualizan cada 5 segundos.
+- **Fechas editables y ampliables (`📅 Fechas`):** permite modificar, agregar (hasta 12 opciones) o eliminar fechas de descanso en cualquier momento, ajustando automáticamente la ruleta, las probabilidades equitativas (`100% / N`), el resumen por área y el archivo Excel.
+- **Asignación manual con alerta (`✎ Asignar manual`):** permite asignar una fecha manualmente cuando haya un caso especial, mostrando una alerta clara de que **no se está tirando la ruleta** y marcando el registro como `Manual (sin ruleta)` en la tabla, historial, Google Drive y Excel.
 - **Exportación real a Excel (`.xlsx`):** genera un archivo formateado con 3 hojas (`Descansos Quirama`, `Resumen por Área` con fórmulas `COUNTIFS`/`SUM` e `Historial de Giros`), además de CSV y copiado directo para pegar en Excel.
-- **Tema claro y oscuro**, sonido mecánico opcional, búsqueda sin acentos por nombre o área, deshacer giro, re-sortear y agregar colaboradores nuevos.
+- **Tema claro y oscuro**, sonido mecánico opcional, búsqueda sin acentos por nombre o área, deshacer registro, re-sortear y agregar colaboradores nuevos.

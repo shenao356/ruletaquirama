@@ -750,6 +750,11 @@ a:hover {
   animation: popIn 0.26s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.result-banner.manual {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+}
+
 .result-status {
   font-size: 12px;
   font-weight: 600;
@@ -757,6 +762,65 @@ a:hover {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.result-banner.manual .result-status {
+  color: var(--warning-text);
+}
+
+.alert-warning {
+  padding: 11px 13px;
+  border-radius: var(--radius-md);
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-text);
+  font-size: 12.5px;
+  line-height: 1.45;
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+}
+
+.manual-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  color: var(--warning-text);
+  white-space: nowrap;
+}
+
+.manual-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manual-option-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.14s ease, background-color 0.14s ease;
+}
+
+.manual-option-item:hover {
+  background: var(--surface-subtle);
+}
+
+.manual-option-item:has(input:checked) {
+  border-color: var(--brand);
+  background: var(--surface-subtle);
 }
 
 .result-name {
@@ -779,6 +843,16 @@ a:hover {
 }
 
 /* Date Stats Grid */
+.date-grid-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 .date-grid {
   width: 100%;
   display: grid;
@@ -788,7 +862,7 @@ a:hover {
 
 @media (min-width: 640px) {
   .date-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
   }
 }
 
@@ -1087,6 +1161,85 @@ table.data-table {
   color: var(--text-muted);
   cursor: pointer;
   user-select: none;
+}
+
+/* Date Manager Modal */
+.modal-lg {
+  max-width: 640px;
+}
+
+.date-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 46vh;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.date-edit-card {
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.date-edit-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.date-edit-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+@media (min-width: 520px) {
+  .date-edit-fields {
+    grid-template-columns: 1.4fr 1.2fr 0.9fr;
+  }
+}
+
+.swatch-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.swatch-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.12s ease, border-color 0.12s ease;
+}
+
+.swatch-btn:hover {
+  transform: scale(1.14);
+}
+
+.swatch-btn.active {
+  border-color: var(--text);
+  transform: scale(1.14);
+}
+
+.date-assigned-tag {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 2px 7px;
+  border-radius: 999px;
 }
 
 .footer-note {

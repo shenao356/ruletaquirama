@@ -1,20 +1,19 @@
 /**
  * ============================================================================
- * RULETA DE DESCANSOS FIN DE AÑO 2026 — QUIRAMA
+ * RULETA DE DESCANSOS FIN DE AÑO 2026 — QUIRAMA (v2 — Fechas Dinámicas)
  * Backend de sincronización en vivo para Google Sheets / Google Drive
  * ============================================================================
  *
- * INSTALACIÓN (1 minuto):
+ * INSTALACIÓN / ACTUALIZACIÓN (30 segundos):
  * 1. Abre tu hoja "Descansos Quirama Fin de Año 2026" en Google Drive:
  *    https://docs.google.com/spreadsheets/d/1oMbzcsW7UjO4vrRzRPwsgYIQwRn5OXRF3w0N-mR-vKc/edit
  * 2. Ve a: Extensiones -> Apps Script.
  * 3. Borra el contenido actual, pega TODO este archivo y guarda (Ctrl + S).
- * 4. Haz clic en: Implementar -> Nueva implementación.
- *    - Tipo: Aplicación web
- *    - Ejecutar como: Yo (tu cuenta)
- *    - Quién tiene acceso: Cualquier usuario
- * 5. Autoriza los permisos y copia la URL que termina en /exec.
- * 6. Pega esa URL en la app web (botón "Conectar Drive") o en config.js del repo.
+ * 4. Si es primera vez: Implementar -> Nueva implementación -> Aplicación web
+ *    (Ejecutar como: Yo / Quién tiene acceso: Cualquier usuario).
+ *    Si estás actualizando: Implementar -> Administrar implementaciones ->
+ *    Editar (lápiz) -> Versión: "Nueva versión" -> Implementar
+ *    (mantiene exactamente la misma URL /exec).
  */
 
 const SPREADSHEET_ID = '1oMbzcsW7UjO4vrRzRPwsgYIQwRn5OXRF3w0N-mR-vKc';
@@ -23,11 +22,22 @@ const SHEET_SUMMARY = 'Resumen por Área';
 const SHEET_HISTORY = 'Historial de Giros';
 const TIMEZONE = 'America/Bogota';
 
-const REST_OPTIONS = [
-  { id: 0, label: '23 y 24 de diciembre', days: 'Mié 23 – Jue 24 Dic 2026', bg: '#DCFCE7', fg: '#14532D' },
-  { id: 1, label: '25 y 26 de diciembre', days: 'Vie 25 – Sáb 26 Dic 2026', bg: '#FEE2E2', fg: '#7F1D1D' },
-  { id: 2, label: '30 y 31 de diciembre', days: 'Mié 30 – Jue 31 Dic 2026', bg: '#FEF3C7', fg: '#78350F' },
-  { id: 3, label: '01 y 02 de enero',     days: 'Vie 01 – Sáb 02 Ene 2027', bg: '#E0F2FE', fg: '#0C4A6E' }
+const COLOR_PALETTE = [
+  { bg: '#DCFCE7', fg: '#14532D' }, // 0 Emerald
+  { bg: '#FEE2E2', fg: '#7F1D1D' }, // 1 Crimson
+  { bg: '#FEF3C7', fg: '#78350F' }, // 2 Amber
+  { bg: '#E0F2FE', fg: '#0C4A6E' }, // 3 Sapphire
+  { bg: '#CCFBF1', fg: '#134E4A' }, // 4 Teal
+  { bg: '#FFEDD5', fg: '#7C2D12' }, // 5 Terracotta
+  { bg: '#DBEAFE', fg: '#1E3A8A' }, // 6 Indigo
+  { bg: '#ECFCCB', fg: '#365314' }  // 7 Olive
+];
+
+const DEFAULT_OPTIONS = [
+  { id: '0', label: '23 y 24 de diciembre', shortLabel: '23 y 24 Dic', days: 'Mié 23 – Jue 24 Dic 2026', seasonTag: 'Nochebuena', colorIndex: 0 },
+  { id: '1', label: '25 y 26 de diciembre', shortLabel: '25 y 26 Dic', days: 'Vie 25 – Sáb 26 Dic 2026', seasonTag: 'Navidad',    colorIndex: 1 },
+  { id: '2', label: '30 y 31 de diciembre', shortLabel: '30 y 31 Dic', days: 'Mié 30 – Jue 31 Dic 2026', seasonTag: 'Fin de Año', colorIndex: 2 },
+  { id: '3', label: '01 y 02 de enero',     shortLabel: '01 y 02 Ene', days: 'Vie 01 – Sáb 02 Ene 2027', seasonTag: 'Año Nuevo',  colorIndex: 3 }
 ];
 
 function getSpreadsheet_() {
@@ -42,19 +52,60 @@ function jsonResponse_(payload) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function getSettings_() {
+function enrichOption_(opt, fallbackIdx) {
+  const idx = Number.isInteger(Number(opt.colorIndex)) ? Math.abs(Number(opt.colorIndex)) % COLOR_PALETTE.length : (fallbackIdx % COLOR_PALETTE.length);
+  const pal = COLOR_PALETTE[idx];
+  return {
+    id: String(opt.id !== undefined ? opt.id : fallbackIdx),
+    label: String(opt.label || '').trim(),
+    shortLabel: String(opt.shortLabel || opt.label || '').trim(),
+    days: String(opt.days || '').trim() || '—',
+    seasonTag: String(opt.seasonTag || '').trim(),
+    colorIndex: idx,
+    bg: opt.bg || pal.bg,
+    fg: opt.fg || pal.fg
+  };
+}
+
+function getOptions_() {
+  const props = PropertiesService.getDocumentProperties();
+  try {
+    const raw = props.getProperty('RULETA_OPTIONS');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length >= 2) {
+        return parsed.map(function (o, i) { return enrichOption_(o, i); });
+      }
+    }
+  } catch (_) {}
+  return DEFAULT_OPTIONS.map(function (o, i) { return enrichOption_(o, i); });
+}
+
+function getSettings_(options) {
   const props = PropertiesService.getDocumentProperties();
   const mode = props.getProperty('RULETA_MODE') || 'equal';
-  let quotas = [11, 11, 11, 11];
+  let quotas = {};
+  const defaultPerOpt = Math.ceil(44 / Math.max(1, options.length));
+  options.forEach(function (o) { quotas[o.id] = defaultPerOpt; });
+
   try {
     const raw = props.getProperty('RULETA_QUOTAS');
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length === 4) quotas = parsed.map(Number);
+      if (Array.isArray(parsed)) {
+        options.forEach(function (o, i) {
+          if (parsed[i] !== undefined) quotas[o.id] = Math.max(1, Number(parsed[i]) || defaultPerOpt);
+        });
+      } else if (parsed && typeof parsed === 'object') {
+        options.forEach(function (o) {
+          if (parsed[o.id] !== undefined) quotas[o.id] = Math.max(1, Number(parsed[o.id]) || defaultPerOpt);
+        });
+      }
     }
   } catch (_) {}
+
   const version = Number(props.getProperty('RULETA_VERSION') || '1');
-  return { mode, quotas, version };
+  return { mode: mode, quotas: quotas, version: version };
 }
 
 function bumpVersion_() {
@@ -64,12 +115,32 @@ function bumpVersion_() {
   return next;
 }
 
-function optionByLabel_(label) {
-  const clean = String(label || '').trim().toLowerCase();
-  for (let i = 0; i < REST_OPTIONS.length; i++) {
-    if (REST_OPTIONS[i].label.toLowerCase() === clean) return REST_OPTIONS[i];
+function findOptionById_(options, id) {
+  const key = String(id);
+  for (let i = 0; i < options.length; i++) {
+    if (String(options[i].id) === key) return options[i];
   }
   return null;
+}
+
+function findOptionByLabel_(options, label) {
+  const clean = String(label || '').trim().toLowerCase();
+  if (!clean || clean === 'pendiente') return null;
+  for (let i = 0; i < options.length; i++) {
+    if (options[i].label.toLowerCase() === clean) return options[i];
+  }
+  return null;
+}
+
+function colLetter_(idx0) {
+  let n = idx0 + 1;
+  let s = '';
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    s = String.fromCharCode(65 + rem) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
 }
 
 function formatNowBogota_() {
@@ -89,10 +160,93 @@ function ensureHistorySheet_(ss) {
   return sh;
 }
 
-function updateBanner_(mainSheet, totalEmps, assignedCount, settings) {
+function rebuildSummarySheet_(ss, options) {
+  const mainSheet = ss.getSheetByName(SHEET_MAIN);
+  let sumSheet = ss.getSheetByName(SHEET_SUMMARY);
+  if (!sumSheet) {
+    sumSheet = ss.insertSheet(SHEET_SUMMARY);
+  }
+  sumSheet.clear();
+
+  // Gather unique areas from Descansos Quirama
+  const areas = [];
+  if (mainSheet && mainSheet.getLastRow() >= 4) {
+    const areaVals = mainSheet.getRange(4, 2, mainSheet.getLastRow() - 3, 1).getDisplayValues();
+    for (let i = 0; i < areaVals.length; i++) {
+      const a = String(areaVals[i][0] || '').trim();
+      if (a && areas.indexOf(a) === -1) areas.push(a);
+    }
+  }
+  if (areas.length === 0) areas.push('General');
+
+  const headers = ['Área'].concat(options.map(function (o) { return o.label; })).concat(['Pendiente', 'Total']);
+  const totalCols = headers.length;
+  const lastColLetter = colLetter_(totalCols - 1);
+  const lastSumColLetter = colLetter_(totalCols - 2);
+
+  sumSheet.getRange('A1:' + lastColLetter + '1').merge()
+    .setValue('RESUMEN DE DESCANSOS POR ÁREA Y FECHA — QUIRAMA 2026')
+    .setBackground('#14532D').setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(13).setHorizontalAlignment('center').setVerticalAlignment('center');
+  sumSheet.setRowHeight(1, 28);
+
+  sumSheet.getRange('A2:' + lastColLetter + '2').merge()
+    .setValue('Fórmulas vinculadas automáticamente a la hoja "Descansos Quirama"')
+    .setBackground('#ECFDF5').setFontColor('#4B5563').setFontStyle('italic').setHorizontalAlignment('center').setVerticalAlignment('center');
+  sumSheet.setRowHeight(2, 20);
+
+  sumSheet.getRange(3, 1, 1, totalCols).setValues([headers])
+    .setBackground('#166534').setFontColor('#FFFFFF').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('center').setWrap(true);
+  sumSheet.setRowHeight(3, 26);
+
+  const areaStart = 4;
+  const areaEnd = areaStart + areas.length - 1;
+  const rangeArea = "'" + SHEET_MAIN + "'!$B$4:$B$250";
+  const rangeDate = "'" + SHEET_MAIN + "'!$D$4:$D$250";
+
+  for (let i = 0; i < areas.length; i++) {
+    const r = areaStart + i;
+    const rowFormulas = [areas[i]];
+    for (let c = 1; c <= totalCols - 2; c++) {
+      const colL = colLetter_(c);
+      rowFormulas.push('=COUNTIFS(' + rangeArea + ',$A' + r + ',' + rangeDate + ',' + colL + '$3)');
+    }
+    rowFormulas.push('=SUM(B' + r + ':' + lastSumColLetter + r + ')');
+    sumSheet.getRange(r, 1, 1, totalCols).setValues([rowFormulas]);
+    sumSheet.getRange(r, 2, 1, totalCols - 1).setHorizontalAlignment('center');
+    sumSheet.getRange(r, totalCols).setBackground('#DCFCE7').setFontColor('#14532D').setFontWeight('bold');
+  }
+
+  const totalRow = areaEnd + 1;
+  const totalFormulas = ['TOTAL GENERAL'];
+  for (let c = 1; c < totalCols; c++) {
+    const colL = colLetter_(c);
+    totalFormulas.push('=SUM(' + colL + areaStart + ':' + colL + areaEnd + ')');
+  }
+  sumSheet.getRange(totalRow, 1, 1, totalCols).setValues([totalFormulas])
+    .setBackground('#DCFCE7').setFontColor('#14532D').setFontWeight('bold');
+  sumSheet.getRange(totalRow, 2, 1, totalCols - 1).setHorizontalAlignment('center');
+
+  const pctRow = totalRow + 1;
+  const pctFormulas = ['% del total de colaboradores'];
+  for (let c = 1; c < totalCols; c++) {
+    const colL = colLetter_(c);
+    pctFormulas.push('=IF($' + lastColLetter + '$' + totalRow + '>0,' + colL + totalRow + '/$' + lastColLetter + '$' + totalRow + ',0)');
+  }
+  sumSheet.getRange(pctRow, 1, 1, totalCols).setValues([pctFormulas]);
+  sumSheet.getRange(pctRow, 2, 1, totalCols - 1).setNumberFormat('0.0%').setHorizontalAlignment('center');
+
+  sumSheet.getRange(3, 1, pctRow - 2, totalCols).setBorder(true, true, true, true, true, true, '#D1D5DB', SpreadsheetApp.BorderStyle.SOLID);
+  sumSheet.setColumnWidth(1, 220);
+  for (let c = 2; c <= totalCols; c++) {
+    sumSheet.setColumnWidth(c, c === totalCols ? 95 : 155);
+  }
+}
+
+function updateBanner_(mainSheet, totalEmps, assignedCount, settings, options) {
+  const pct = options.length > 0 ? Math.round((100 / options.length) * 10) / 10 : 25;
   const modeDesc = settings.mode === 'equal'
-    ? 'Probabilidad igual (25% cada fecha)'
-    : 'Cupos equilibrados (' + settings.quotas.join(' / ') + ')';
+    ? 'Probabilidad igual (' + pct + '% cada fecha)'
+    : 'Cupos equilibrados (' + options.map(function (o) { return settings.quotas[o.id] || 0; }).join(' / ') + ')';
   const text = 'Actualizado: ' + formatNowBogota_() +
     '  |  Sorteados: ' + assignedCount + ' de ' + totalEmps +
     '  |  Modo: ' + modeDesc;
@@ -105,6 +259,7 @@ function readFullState_(ss) {
     throw new Error('No se encontró la hoja "' + SHEET_MAIN + '".');
   }
 
+  const options = getOptions_();
   const lastRow = mainSheet.getLastRow();
   const employees = [];
   const assignments = {};
@@ -120,22 +275,29 @@ function readFullState_(ss) {
       if (id > maxId) maxId = id;
       const area = String(row[1] || '').trim() || 'General';
       const dateLabel = String(row[3] || '').trim();
+      const statusText = String(row[5] || '').trim();
       const ts = String(row[6] || '').trim();
 
       employees.push({ id: id, area: area, name: name });
 
-      const opt = optionByLabel_(dateLabel);
+      const opt = findOptionByLabel_(options, dateLabel);
       if (opt) {
+        const isManual = statusText.toLowerCase().indexOf('manual') >= 0;
+        let manualReason = '';
+        if (isManual && statusText.indexOf('—') >= 0) {
+          manualReason = statusText.split('—').slice(1).join('—').trim();
+        }
         assignments[id] = {
           optionId: opt.id,
           timestamp: ts || '',
-          mode: 'equal'
+          mode: isManual ? 'manual' : 'equal',
+          isManual: isManual,
+          manualReason: manualReason
         };
       }
     }
   }
 
-  // Read history sheet
   const history = [];
   const histSheet = ss.getSheetByName(SHEET_HISTORY);
   if (histSheet && histSheet.getLastRow() >= 3) {
@@ -143,24 +305,32 @@ function readFullState_(ss) {
     for (let i = 0; i < hVals.length; i++) {
       const r = hVals[i];
       const hName = String(r[2] || '').trim();
-      const opt = optionByLabel_(r[4]);
-      if (!hName || !opt) continue;
+      const label = String(r[4] || '').trim();
+      if (!hName || !label) continue;
+      const opt = findOptionByLabel_(options, label);
+      const modeCell = String(r[5] || '');
+      const hManual = modeCell.toLowerCase().indexOf('manual') >= 0;
       history.push({
         order: Number(r[0]) || (i + 1),
         timestamp: String(r[1] || '').trim(),
         name: hName,
         area: String(r[3] || '').trim(),
-        optionId: opt.id,
-        mode: String(r[5] || '').indexOf('Cupos') >= 0 ? 'balanced' : 'equal'
+        optionId: opt ? opt.id : null,
+        optionLabel: label,
+        mode: hManual ? 'manual' : (modeCell.indexOf('Cupos') >= 0 ? 'balanced' : 'equal'),
+        isManual: hManual,
+        modeText: modeCell
       });
     }
   }
 
-  const settings = getSettings_();
+  const settings = getSettings_(options);
   return {
     ok: true,
+    scriptVersion: 2,
     serverTime: new Date().toISOString(),
     version: settings.version,
+    options: options,
     mode: settings.mode,
     quotas: settings.quotas,
     nextEmpId: maxId + 1,
@@ -183,11 +353,15 @@ function findEmployeeRow_(mainSheet, empId) {
   return -1;
 }
 
-function applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted) {
+function applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, isManual, manualReason) {
+  const reasonClean = String(manualReason || '').trim();
+  const statusVal = isManual
+    ? (reasonClean ? 'Manual (sin ruleta) — ' + reasonClean : 'Manual (sin ruleta)')
+    : 'Asignado';
   mainSheet.getRange(rowNum, 4, 1, 4).setValues([[
     opt.label,
-    opt.days,
-    'Asignado',
+    opt.days || '—',
+    statusVal,
     tsFormatted
   ]]);
   mainSheet.getRange(rowNum, 4)
@@ -198,8 +372,8 @@ function applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted) {
     .setHorizontalAlignment('center');
   mainSheet.getRange(rowNum, 5).setHorizontalAlignment('center');
   mainSheet.getRange(rowNum, 6)
-    .setBackground('#DCFCE7')
-    .setFontColor('#14532D')
+    .setBackground(isManual ? '#FEF3C7' : '#DCFCE7')
+    .setFontColor(isManual ? '#78350F' : '#14532D')
     .setFontWeight('bold')
     .setFontStyle('normal')
     .setHorizontalAlignment('center');
@@ -232,8 +406,7 @@ function applyPendingToRow_(mainSheet, rowNum) {
 function doGet(e) {
   try {
     const ss = getSpreadsheet_();
-    const state = readFullState_(ss);
-    return jsonResponse_(state);
+    return jsonResponse_(readFullState_(ss));
   } catch (err) {
     return jsonResponse_({ ok: false, error: String(err && err.message ? err.message : err) });
   }
@@ -248,19 +421,29 @@ function doPost(e) {
     const ss = getSpreadsheet_();
     const mainSheet = ss.getSheetByName(SHEET_MAIN);
     const histSheet = ensureHistorySheet_(ss);
+    let options = getOptions_();
 
     if (action === 'recordSpin') {
       const empId = Number(body.empId);
-      const optionId = Number(body.optionId);
       const forceOverwrite = Boolean(body.forceOverwrite);
-      const opt = REST_OPTIONS[optionId];
+      let opt = findOptionById_(options, body.optionId);
+      if (!opt && body.optionLabel) {
+        opt = findOptionByLabel_(options, body.optionLabel) || enrichOption_({
+          id: String(body.optionId || 'custom'),
+          label: body.optionLabel,
+          days: body.optionDays || '—',
+          bg: body.optionBg || '#DCFCE7',
+          fg: body.optionFg || '#14532D',
+          colorIndex: Number(body.colorIndex) || 0
+        }, 0);
+      }
       if (!opt) return jsonResponse_({ ok: false, error: 'Opción de fecha inválida.' });
 
       const rowNum = findEmployeeRow_(mainSheet, empId);
       if (rowNum < 0) return jsonResponse_({ ok: false, error: 'Colaborador no encontrado en la hoja.' });
 
       const currentDateLabel = String(mainSheet.getRange(rowNum, 4).getDisplayValue() || '').trim();
-      const existingOpt = optionByLabel_(currentDateLabel);
+      const existingOpt = findOptionByLabel_(options, currentDateLabel);
       if (existingOpt && !forceOverwrite) {
         return jsonResponse_({
           ok: false,
@@ -272,12 +455,17 @@ function doPost(e) {
       }
 
       const tsFormatted = formatNowBogota_();
-      applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted);
+      const isManual = Boolean(body.isManual) || body.mode === 'manual';
+      const manualReason = String(body.manualReason || '').trim();
+      applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, isManual, manualReason);
 
       const empArea = String(mainSheet.getRange(rowNum, 2).getDisplayValue() || '').trim();
       const empName = String(mainSheet.getRange(rowNum, 3).getDisplayValue() || '').trim();
       const nextOrder = Math.max(1, histSheet.getLastRow() - 1);
-      const modeLabel = body.mode === 'balanced' ? 'Cupos equilibrados' : 'Probabilidad igual (25%)';
+      const pct = Math.round((100 / Math.max(1, options.length)) * 10) / 10;
+      const modeLabel = isManual
+        ? (manualReason ? 'Manual (sin ruleta) — ' + manualReason : 'Manual (sin ruleta)')
+        : (body.mode === 'balanced' ? 'Cupos equilibrados' : 'Probabilidad igual (' + pct + '%)');
       const newHistRow = histSheet.getLastRow() + 1;
       histSheet.getRange(newHistRow, 1, 1, 6).setValues([[
         nextOrder, tsFormatted, empName, empArea, opt.label, modeLabel
@@ -285,11 +473,89 @@ function doPost(e) {
       histSheet.getRange(newHistRow, 1).setHorizontalAlignment('center');
       histSheet.getRange(newHistRow, 2).setHorizontalAlignment('center');
       histSheet.getRange(newHistRow, 5).setBackground(opt.bg).setFontColor(opt.fg).setFontWeight('bold').setHorizontalAlignment('center');
-      histSheet.getRange(newHistRow, 6).setHorizontalAlignment('center');
+      histSheet.getRange(newHistRow, 6)
+        .setBackground(isManual ? '#FEF3C7' : '#FFFFFF')
+        .setFontColor(isManual ? '#78350F' : '#1F2937')
+        .setFontWeight(isManual ? 'bold' : 'normal')
+        .setHorizontalAlignment('center');
 
       bumpVersion_();
       const freshState = readFullState_(ss);
-      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_());
+      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_(options), options);
+      return jsonResponse_({ ok: true, state: freshState });
+    }
+
+    if (action === 'updateOptions') {
+      const incoming = Array.isArray(body.options) ? body.options : [];
+      if (incoming.length < 2) {
+        return jsonResponse_({ ok: false, error: 'Se requieren al menos 2 fechas en la ruleta.' });
+      }
+      const nextOptions = incoming.map(function (o, i) { return enrichOption_(o, i); });
+      const props = PropertiesService.getDocumentProperties();
+      props.setProperty('RULETA_OPTIONS', JSON.stringify(nextOptions));
+
+      const renamedMap = body.renamedMap || {};
+      const deletedLabels = (Array.isArray(body.deletedLabels) ? body.deletedLabels : []).map(function (s) {
+        return String(s || '').trim().toLowerCase();
+      });
+
+      const lastRow = mainSheet.getLastRow();
+      if (lastRow >= 4) {
+        const rows = mainSheet.getRange(4, 4, lastRow - 3, 4).getDisplayValues();
+        for (let i = 0; i < rows.length; i++) {
+          const rNum = 4 + i;
+          const curLabel = String(rows[i][0] || '').trim();
+          const curLower = curLabel.toLowerCase();
+          if (!curLabel || curLower === 'pendiente') continue;
+
+          if (deletedLabels.indexOf(curLower) >= 0) {
+            applyPendingToRow_(mainSheet, rNum);
+            continue;
+          }
+
+          let targetOpt = null;
+          if (renamedMap[curLower] !== undefined) {
+            targetOpt = findOptionById_(nextOptions, renamedMap[curLower]);
+          } else {
+            targetOpt = findOptionByLabel_(nextOptions, curLabel);
+          }
+
+          if (targetOpt) {
+            const curStatus = String(rows[i][2] || '');
+            const wasManual = curStatus.toLowerCase().indexOf('manual') >= 0;
+            const mSplit = curStatus.split('—');
+            const prevReason = wasManual && mSplit.length > 1 ? mSplit.slice(1).join('—').trim() : '';
+            applyAssignmentToRow_(mainSheet, rNum, targetOpt, rows[i][3] || '', wasManual, prevReason);
+          }
+        }
+      }
+
+      // Also update renamed labels in Historial de Giros
+      if (histSheet.getLastRow() >= 3 && Object.keys(renamedMap).length > 0) {
+        const hLabels = histSheet.getRange(3, 5, histSheet.getLastRow() - 2, 1).getDisplayValues();
+        for (let i = 0; i < hLabels.length; i++) {
+          const curLower = String(hLabels[i][0] || '').trim().toLowerCase();
+          if (renamedMap[curLower] !== undefined) {
+            const targetOpt = findOptionById_(nextOptions, renamedMap[curLower]);
+            if (targetOpt) {
+              histSheet.getRange(3 + i, 5)
+                .setValue(targetOpt.label)
+                .setBackground(targetOpt.bg)
+                .setFontColor(targetOpt.fg)
+                .setFontWeight('bold');
+            }
+          }
+        }
+      }
+
+      if (body.quotas && typeof body.quotas === 'object') {
+        props.setProperty('RULETA_QUOTAS', JSON.stringify(body.quotas));
+      }
+
+      rebuildSummarySheet_(ss, nextOptions);
+      bumpVersion_();
+      const freshState = readFullState_(ss);
+      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_(nextOptions), nextOptions);
       return jsonResponse_({ ok: true, state: freshState });
     }
 
@@ -300,7 +566,7 @@ function doPost(e) {
       applyPendingToRow_(mainSheet, rowNum);
       bumpVersion_();
       const freshState = readFullState_(ss);
-      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_());
+      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_(options), options);
       return jsonResponse_({ ok: true, state: freshState });
     }
 
@@ -319,23 +585,23 @@ function doPost(e) {
       mainSheet.getRange(newRow, 1).setHorizontalAlignment('center');
       applyPendingToRow_(mainSheet, newRow);
 
+      rebuildSummarySheet_(ss, options);
       bumpVersion_();
       const freshState = readFullState_(ss);
-      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_());
+      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_(options), options);
       return jsonResponse_({ ok: true, addedId: newId, state: freshState });
     }
 
     if (action === 'updateSettings') {
       const props = PropertiesService.getDocumentProperties();
       const mode = body.mode === 'balanced' ? 'balanced' : 'equal';
-      const quotas = Array.isArray(body.quotas) && body.quotas.length === 4
-        ? body.quotas.map(n => Math.max(1, Number(n) || 11))
-        : [11, 11, 11, 11];
       props.setProperty('RULETA_MODE', mode);
-      props.setProperty('RULETA_QUOTAS', JSON.stringify(quotas));
+      if (body.quotas && typeof body.quotas === 'object') {
+        props.setProperty('RULETA_QUOTAS', JSON.stringify(body.quotas));
+      }
       bumpVersion_();
       const freshState = readFullState_(ss);
-      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_());
+      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_(options), options);
       return jsonResponse_({ ok: true, state: freshState });
     }
 
@@ -351,28 +617,33 @@ function doPost(e) {
       }
       bumpVersion_();
       const freshState = readFullState_(ss);
-      updateBanner_(mainSheet, freshState.employees.length, 0, getSettings_());
+      updateBanner_(mainSheet, freshState.employees.length, 0, getSettings_(options), options);
       return jsonResponse_({ ok: true, state: freshState });
     }
 
     if (action === 'pushLocalProgress') {
+      if (Array.isArray(body.options) && body.options.length >= 2) {
+        options = body.options.map(function (o, i) { return enrichOption_(o, i); });
+        PropertiesService.getDocumentProperties().setProperty('RULETA_OPTIONS', JSON.stringify(options));
+        rebuildSummarySheet_(ss, options);
+      }
       const localAssignments = body.assignments || {};
       const ids = Object.keys(localAssignments);
       for (let i = 0; i < ids.length; i++) {
         const empId = Number(ids[i]);
         const rec = localAssignments[empId];
-        const opt = rec ? REST_OPTIONS[Number(rec.optionId)] : null;
+        const opt = rec ? findOptionById_(options, rec.optionId) : null;
         if (!opt) continue;
         const rowNum = findEmployeeRow_(mainSheet, empId);
         if (rowNum < 0) continue;
-        const existing = optionByLabel_(mainSheet.getRange(rowNum, 4).getDisplayValue());
+        const existing = findOptionByLabel_(options, mainSheet.getRange(rowNum, 4).getDisplayValue());
         if (!existing) {
-          applyAssignmentToRow_(mainSheet, rowNum, opt, formatNowBogota_());
+          applyAssignmentToRow_(mainSheet, rowNum, opt, formatNowBogota_(), Boolean(rec.isManual), rec.manualReason || '');
         }
       }
       bumpVersion_();
       const freshState = readFullState_(ss);
-      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_());
+      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_(options), options);
       return jsonResponse_({ ok: true, state: freshState });
     }
 
