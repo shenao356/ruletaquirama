@@ -575,6 +575,32 @@
     return counts;
   }
 
+  function hasSpunRoulette(empId) {
+    const numId = Number(empId);
+    const emp = state.employees.find(e => e.id === numId);
+    const rec = state.assignments[numId];
+    if (rec && !rec.isManual && rec.mode !== 'manual') return true;
+    const activeIds = new Set(state.options.map(o => String(o.id)));
+    const activeLabels = new Set(state.options.map(o => o.label.toLowerCase()));
+    return state.history.some(h => {
+      if (!h || h.isManual || h.mode === 'manual') return false;
+      const matchesEmp = (h.empId !== undefined && h.empId !== null && Number(h.empId) === numId) ||
+        (emp && h.name && String(h.name).trim().toUpperCase() === String(emp.name).trim().toUpperCase());
+      if (!matchesEmp) return false;
+      const optActive = (h.optionId !== null && h.optionId !== undefined && activeIds.has(String(h.optionId))) ||
+        (h.optionLabel && activeLabels.has(String(h.optionLabel).trim().toLowerCase()));
+      return optActive;
+    });
+  }
+
+  function canSpinRoulette(empId) {
+    if (!empId) return false;
+    const numId = Number(empId);
+    if (state.assignments[numId]) return false;
+    if (hasSpunRoulette(numId)) return false;
+    return true;
+  }
+
   function getWheelSectors(excludeEmpId = null) {
     const opts = state.options;
     const repeatEqual = opts.length <= 5 ? 2 : 1;
@@ -1523,35 +1549,39 @@
       return;
     }
 
-    if (syncUrl && !state.assignments[emp.id]) {
-      const btnText = document.getElementById('btnSpinText');
-      btnText.textContent = 'Verificando...';
-      document.getElementById('btnSpinMain').disabled = true;
-      await syncFromDrive({ silent: true });
-      emp = state.employees.find(e => e.id === selectedPersonId);
-      updateSpinButtons();
-      if (!emp) return;
-      if (state.assignments[emp.id]) {
-        const existingOpt = getOptionById(state.assignments[emp.id].optionId);
-        showToast(`${emp.name} ya fue sorteado desde otro dispositivo (${existingOpt ? existingOpt.shortLabel : ''})`, 'ℹ');
-        return;
-      }
-    }
-
-    if (state.assignments[emp.id]) {
-      const cur = getOptionById(state.assignments[emp.id].optionId);
-      openConfirm(
-        '¿Volver a girar para este colaborador?',
-        `${emp.name} ya tiene asignado el descanso del ${cur ? cur.label : 'actual'}. Si vuelves a girar, el nuevo resultado reemplazará su fecha actual.`,
-        () => executeSpin(emp, true)
+    if (!canSpinRoulette(emp.id)) {
+      showToast(
+        hasSpunRoulette(emp.id)
+          ? `🔒 ${emp.name} ya tiró la ruleta. Solo se permite 1 giro por persona.`
+          : `🔒 ${emp.name} ya tiene fecha de descanso asignada. Solo se permite 1 turno por persona.`,
+        '🔒'
       );
       return;
     }
 
-    executeSpin(emp, false);
+    if (syncUrl) {
+      isSpinning = true;
+      updateSpinButtons();
+      document.getElementById('btnSpinText').textContent = 'Verificando...';
+      await syncFromDrive({ silent: true });
+      isSpinning = false;
+      emp = state.employees.find(e => e.id === selectedPersonId);
+      updateSpinButtons();
+      if (!emp) return;
+      if (!canSpinRoulette(emp.id)) {
+        const existingOpt = state.assignments[emp.id] ? getOptionById(state.assignments[emp.id].optionId) : null;
+        showToast(
+          `🔒 ${emp.name} ya tiró la ruleta desde otro dispositivo${existingOpt ? ' (' + existingOpt.shortLabel + ')' : ''}. Solo se permite 1 giro por persona.`,
+          '🔒'
+        );
+        return;
+      }
+    }
+
+    executeSpin(emp);
   }
 
-  function executeSpin(emp, forceOverwrite) {
+  function executeSpin(emp) {
     ensureAudio();
     isSpinning = true;
     document.getElementById('resultBanner').classList.add('hidden');
@@ -1604,7 +1634,7 @@
         wheelAngle = normalizeAngle(startAngle + totalDelta);
         pointerDeflection = 0;
         drawWheel();
-        commitAssignment(emp, winningSector.option, { forceOverwrite, isManual: false, manualReason: '' });
+        commitAssignment(emp, winningSector.option, { forceOverwrite: false, isManual: false, manualReason: '' });
       }
     }
 
@@ -1615,6 +1645,13 @@
     isSpinning = false;
     const nowIso = new Date().toISOString();
     const prevAssignment = state.assignments[emp.id] ? { ...state.assignments[emp.id] } : null;
+
+    // Hard safeguard: never overwrite an existing spin unless explicitly manual
+    if (!isManual && !canSpinRoulette(emp.id)) {
+      renderAll();
+      showToast(`🔒 ${emp.name} ya tiró la ruleta. Solo se permite 1 giro por persona.`, '🔒');
+      return;
+    }
 
     state.assignments[emp.id] = {
       optionId: option.id,
@@ -1638,8 +1675,9 @@
     state.history.push(histItem);
     saveState();
 
+    const canUndoManual = Boolean(isManual && (!prevAssignment || prevAssignment.isManual));
     lastFlashedId = emp.id;
-    lastSpinRecord = { empId: emp.id, prevAssignment, histOrder: histItem.order };
+    lastSpinRecord = canUndoManual ? { empId: emp.id, prevAssignment, histOrder: histItem.order, isManual: true } : null;
 
     if (isManual) {
       playManualAlertTone();
@@ -1651,10 +1689,11 @@
     let finalOption = option;
     let savedMsg = isManual
       ? '⚠️ ASIGNACIÓN MANUAL — No se giró la ruleta (guardado en el registro)'
-      : 'Guardado automáticamente en el registro Excel';
+      : 'Guardado automáticamente en el registro Excel (giro único registrado)';
 
     const banner = document.getElementById('resultBanner');
     banner.classList.toggle('manual', Boolean(isManual));
+    document.getElementById('btnResultUndo').classList.toggle('hidden', !canUndoManual);
 
     if (syncUrl) {
       document.getElementById('resultSavedNote').textContent = isManual
@@ -1674,17 +1713,21 @@
         mode: isManual ? 'manual' : state.mode,
         isManual: Boolean(isManual),
         manualReason: String(manualReason || '').trim(),
-        forceOverwrite: Boolean(forceOverwrite)
+        forceOverwrite: Boolean(isManual && forceOverwrite)
       });
 
       if (res && res.conflict) {
-        finalOption = getOptionById(res.existingOptionId) || option;
-        savedMsg = 'Otro dispositivo ya había asignado a esta persona — se conservó el primer resultado en Drive';
-        showToast(`${emp.name} ya tenía fecha en Drive: ${finalOption.shortLabel}`, 'ℹ');
+        const remoteRec = state.assignments[emp.id];
+        finalOption = getOptionById(res.existingOptionId)
+          || (remoteRec && getOptionById(remoteRec.optionId))
+          || (res.existingOptionLabel && state.options.find(o => o.label.toLowerCase() === String(res.existingOptionLabel).toLowerCase()))
+          || option;
+        savedMsg = '🔒 Esta persona ya había girado la ruleta (máx. 1 giro) — se conservó su resultado original en Drive';
+        showToast(`🔒 ${emp.name} ya había tirado la ruleta (${finalOption.shortLabel}). Solo 1 giro por persona.`, '🔒');
       } else if (res && res.ok) {
         savedMsg = isManual
           ? '⚠️ ASIGNACIÓN MANUAL (sin girar la ruleta) — Guardado en Google Drive'
-          : 'Guardado y sincronizado en vivo en Google Drive';
+          : 'Guardado y sincronizado en vivo en Google Drive (giro único bloqueado)';
       } else if (res && res.error && String(res.error).includes('inválida')) {
         savedMsg = isManual
           ? '⚠️ ASIGNACIÓN MANUAL (sin ruleta) — Guardado localmente (actualiza Code.gs para sincronizar nuevas fechas)'
@@ -2029,6 +2072,7 @@
     const emp = state.employees.find(e => e.id === selectedPersonId);
     const nameEl = document.getElementById('activePersonName');
     const areaEl = document.getElementById('activeAreaChip');
+    const limitChip = document.getElementById('activeSpinLimitChip');
     const metaEl = document.getElementById('activePersonMeta');
     const badgeWrap = document.getElementById('activeAlreadyAssignedActions');
     const badgeEl = document.getElementById('activeExistingDateBadge');
@@ -2036,6 +2080,8 @@
     if (!emp) {
       nameEl.textContent = 'Selecciona una persona de la lista para comenzar';
       areaEl.classList.add('hidden');
+      limitChip.textContent = '1 giro por persona';
+      limitChip.classList.remove('locked');
       metaEl.textContent = 'Haz clic en cualquier nombre o pulsa "Siguiente" para elegir al participante.';
       badgeWrap.classList.add('hidden');
     } else {
@@ -2045,20 +2091,35 @@
 
       const rec = state.assignments[emp.id];
       const opt = rec ? getOptionById(rec.optionId) : null;
+      const spunAlready = hasSpunRoulette(emp.id);
+
       if (rec && opt) {
-        metaEl.textContent = rec.isManual
-          ? `⚠️ Asignado manualmente (sin girar la ruleta)${rec.manualReason ? ' · ' + rec.manualReason : ''}. Puedes girar la ruleta o cambiar la fecha si deseas.`
-          : `Ya sorteado${rec.timestamp ? ' (' + formatDateTimeEs(rec.timestamp) + ')' : ''}. Puedes volver a girar si necesitas reasignar.`;
+        if (rec.isManual) {
+          limitChip.textContent = spunAlready ? '🔒 Ya giró (1/1)' : '⚠️ Fecha manual';
+          limitChip.classList.add('locked');
+          metaEl.textContent = `⚠️ Asignado manualmente (sin girar la ruleta)${rec.manualReason ? ' · ' + rec.manualReason : ''}. La ruleta queda bloqueada para esta persona.`;
+        } else {
+          limitChip.textContent = '🔒 Ya giró (1/1)';
+          limitChip.classList.add('locked');
+          metaEl.textContent = `🔒 Ya realizó su único giro de ruleta${rec.timestamp ? ' (' + formatDateTimeEs(rec.timestamp) + ')' : ''}. Solo se permite 1 tiro por persona.`;
+        }
         badgeEl.textContent = rec.isManual ? `⚠️ ${opt.shortLabel}` : opt.shortLabel;
         badgeEl.style.background = opt.pillBg;
         badgeEl.style.color = opt.pillText;
         badgeWrap.classList.remove('hidden');
+      } else if (spunAlready) {
+        limitChip.textContent = '🔒 Ya giró (1/1)';
+        limitChip.classList.add('locked');
+        metaEl.textContent = '🔒 Esta persona ya utilizó su único giro de ruleta. Solo se permite 1 tiro por persona.';
+        badgeWrap.classList.add('hidden');
       } else {
         const eqPct = formatPct(1 / Math.max(1, state.options.length));
         const probs = getOptionProbabilitiesMap(emp.id);
+        limitChip.textContent = '1 giro disponible';
+        limitChip.classList.remove('locked');
         metaEl.textContent = state.mode === 'equal'
-          ? `Probabilidad idéntica: ${eqPct} para cada una de las ${state.options.length} fechas.`
-          : `Probabilidades activas: ${state.options.map(o => formatPct(probs[o.id] || 0)).join(' · ')}.`;
+          ? `1 único giro permitido · Probabilidad idéntica: ${eqPct} para cada una de las ${state.options.length} fechas.`
+          : `1 único giro permitido · Probabilidades activas: ${state.options.map(o => formatPct(probs[o.id] || 0)).join(' · ')}.`;
         badgeWrap.classList.add('hidden');
       }
     }
@@ -2067,26 +2128,35 @@
 
   function updateSpinButtons() {
     const emp = state.employees.find(e => e.id === selectedPersonId);
-    const canAct = Boolean(emp) && !isSpinning;
+    const canSpin = Boolean(emp) && !isSpinning && canSpinRoulette(emp.id);
+    const canManual = Boolean(emp) && !isSpinning;
     const btnMain = document.getElementById('btnSpinMain');
     const btnHub = document.getElementById('btnHubSpin');
     const btnManual = document.getElementById('btnManualAssign');
     const btnText = document.getElementById('btnSpinText');
+    const hubTitle = document.getElementById('hubTitle');
     const hubSub = document.getElementById('hubSubtext');
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
 
-    btnMain.disabled = !canAct;
-    btnHub.disabled = !canAct;
-    btnManual.disabled = !canAct;
+    btnMain.disabled = !canSpin;
+    btnHub.disabled = !canSpin;
+    btnManual.disabled = !canManual;
 
     if (isSpinning) {
       btnText.textContent = 'Girando...';
-      hubSub.textContent = '...';
+      hubTitle.textContent = '...';
+      hubSub.textContent = 'Suerte';
+    } else if (emp && hasSpunRoulette(emp.id)) {
+      btnText.textContent = '🔒 Ya giró (1/1)';
+      hubTitle.textContent = '🔒';
+      hubSub.textContent = '1/1';
     } else if (emp && state.assignments[emp.id]) {
-      btnText.textContent = 'Volver a Girar';
-      hubSub.textContent = state.mode === 'equal' ? eqPct : 'Urna';
+      btnText.textContent = '🔒 Ya tiene fecha';
+      hubTitle.textContent = '🔒';
+      hubSub.textContent = 'Manual';
     } else {
       btnText.textContent = 'Girar Ruleta';
+      hubTitle.textContent = 'GIRAR';
       hubSub.textContent = state.mode === 'equal' ? eqPct : 'Urna';
     }
   }
@@ -2153,7 +2223,24 @@
       regBody.innerHTML = rows.map((emp, idx) => {
         const rec = state.assignments[emp.id];
         const opt = rec ? getOptionById(rec.optionId) : null;
+        const spunAlready = hasSpunRoulette(emp.id);
         const flashClass = emp.id === lastFlashedId ? 'row-flash' : '';
+        let actionHtml = '';
+        if (rec) {
+          if (rec.isManual && !spunAlready) {
+            actionHtml = `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Manual</button>` +
+              `<button type="button" data-action="clear" data-emp-id="${emp.id}" class="link-btn danger">Quitar</button>`;
+          } else {
+            actionHtml = `<span class="locked-tag" title="Ya realizó su único giro de ruleta">🔒 1/1</span>` +
+              `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
+          }
+        } else if (spunAlready) {
+          actionHtml = `<span class="locked-tag" title="Ya realizó su único giro de ruleta">🔒 1/1</span>` +
+            `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
+        } else {
+          actionHtml = `<button type="button" data-action="select" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Seleccionar</button>` +
+            `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
+        }
         return `
           <tr class="${flashClass}">
             <td class="center tabular" style="color:var(--text-muted);">${idx + 1}</td>
@@ -2168,15 +2255,7 @@
             </td>
             <td class="nowrap" style="color:var(--text-muted);">${opt ? xmlEscape(opt.days) : '—'}</td>
             <td class="nowrap tabular" style="color:var(--text-muted);">${rec ? formatDateTimeEs(rec.timestamp) : '—'}</td>
-            <td class="right nowrap">
-              ${rec
-                ? `<button type="button" data-action="select" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Re-girar</button>
-                   <button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Manual</button>
-                   <button type="button" data-action="clear" data-emp-id="${emp.id}" class="link-btn danger">Quitar</button>`
-                : `<button type="button" data-action="select" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Seleccionar</button>
-                   <button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`
-              }
-            </td>
+            <td class="right nowrap">${actionHtml}</td>
           </tr>`;
       }).join('');
     }
@@ -2417,9 +2496,13 @@
     } else if (btn.dataset.action === 'manual') {
       openManualAssignModal(empId);
     } else if (btn.dataset.action === 'clear') {
+      if (hasSpunRoulette(empId)) {
+        showToast(`🔒 ${emp.name} ya giró la ruleta. No se puede borrar su único giro.`, '🔒');
+        return;
+      }
       openConfirm(
-        'Quitar asignación de descanso',
-        `¿Deseas dejar nuevamente como pendiente a ${emp.name}?`,
+        'Quitar asignación manual',
+        `¿Deseas quitar la fecha manual de ${emp.name} y dejarlo como pendiente?`,
         async () => {
           delete state.assignments[empId];
           saveState();
@@ -2530,9 +2613,9 @@
   document.getElementById('btnResultNext').addEventListener('click', pickNextPending);
   document.getElementById('btnResultDownload').addEventListener('click', () => downloadXlsx(false));
   document.getElementById('btnResultUndo').addEventListener('click', async () => {
-    if (!lastSpinRecord || isSpinning) return;
+    if (!lastSpinRecord || !lastSpinRecord.isManual || isSpinning) return;
     const { empId, prevAssignment, histOrder } = lastSpinRecord;
-    if (prevAssignment) {
+    if (prevAssignment && prevAssignment.isManual) {
       state.assignments[empId] = prevAssignment;
       const prevOpt = getOptionById(prevAssignment.optionId);
       if (syncUrl && prevOpt) {
@@ -2544,22 +2627,24 @@
           optionDays: prevOpt.days,
           optionBg: prevOpt.pillBg,
           optionFg: prevOpt.pillText,
-          mode: prevAssignment.mode || state.mode,
-          isManual: Boolean(prevAssignment.isManual),
+          mode: 'manual',
+          isManual: true,
           manualReason: prevAssignment.manualReason || '',
           forceOverwrite: true
         });
       }
-    } else {
+    } else if (!prevAssignment) {
       delete state.assignments[empId];
       if (syncUrl) await postToDrive({ action: 'clearAssignment', empId });
+    } else {
+      return;
     }
     state.history = state.history.filter(h => h.order !== histOrder);
     lastSpinRecord = null;
     saveState();
     document.getElementById('resultBanner').classList.add('hidden');
     renderAll();
-    showToast('Último registro deshecho', '↺');
+    showToast('Asignación manual deshecha', '↺');
   });
 
   // Spacebar shortcut
@@ -2570,7 +2655,12 @@
     if (document.querySelector('.modal-backdrop:not(.hidden)')) return;
     if (selectedPersonId && !isSpinning) {
       e.preventDefault();
-      spinWheel();
+      if (canSpinRoulette(selectedPersonId)) {
+        spinWheel();
+      } else {
+        const emp = state.employees.find(x => x.id === selectedPersonId);
+        showToast(`🔒 ${emp ? emp.name : 'Esta persona'} ya tiene su turno asignado. Solo se permite 1 giro por persona.`, '🔒');
+      }
     }
   });
 

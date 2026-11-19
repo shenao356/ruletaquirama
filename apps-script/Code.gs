@@ -403,6 +403,24 @@ function applyPendingToRow_(mainSheet, rowNum) {
   mainSheet.getRange(rowNum, 7).setHorizontalAlignment('center');
 }
 
+function hasPriorRouletteSpin_(histSheet, empName, options) {
+  if (!histSheet || histSheet.getLastRow() < 3) return null;
+  const target = String(empName || '').trim().toUpperCase();
+  if (!target) return null;
+  const hVals = histSheet.getRange(3, 1, histSheet.getLastRow() - 2, 6).getDisplayValues();
+  for (let i = 0; i < hVals.length; i++) {
+    const r = hVals[i];
+    const hName = String(r[2] || '').trim().toUpperCase();
+    const hLabel = String(r[4] || '').trim();
+    const hMode = String(r[5] || '').toLowerCase();
+    if (hName === target && hMode.indexOf('manual') < 0) {
+      const matched = findOptionByLabel_(options, hLabel);
+      if (matched) return matched;
+    }
+  }
+  return null;
+}
+
 function doGet(e) {
   try {
     const ss = getSpreadsheet_();
@@ -425,7 +443,9 @@ function doPost(e) {
 
     if (action === 'recordSpin') {
       const empId = Number(body.empId);
-      const forceOverwrite = Boolean(body.forceOverwrite);
+      const isManual = Boolean(body.isManual) || body.mode === 'manual';
+      // Solo se permite sobrescribir mediante asignación manual explícita; la ruleta es 1 giro único por persona.
+      const allowOverwrite = isManual && Boolean(body.forceOverwrite);
       let opt = findOptionById_(options, body.optionId);
       if (!opt && body.optionLabel) {
         opt = findOptionByLabel_(options, body.optionLabel) || enrichOption_({
@@ -442,25 +462,29 @@ function doPost(e) {
       const rowNum = findEmployeeRow_(mainSheet, empId);
       if (rowNum < 0) return jsonResponse_({ ok: false, error: 'Colaborador no encontrado en la hoja.' });
 
+      const empArea = String(mainSheet.getRange(rowNum, 2).getDisplayValue() || '').trim();
+      const empName = String(mainSheet.getRange(rowNum, 3).getDisplayValue() || '').trim();
       const currentDateLabel = String(mainSheet.getRange(rowNum, 4).getDisplayValue() || '').trim();
       const existingOpt = findOptionByLabel_(options, currentDateLabel);
-      if (existingOpt && !forceOverwrite) {
+      const priorSpinOpt = !isManual ? hasPriorRouletteSpin_(histSheet, empName, options) : null;
+
+      if (!allowOverwrite && (existingOpt || priorSpinOpt)) {
+        const lockedOpt = existingOpt || priorSpinOpt;
         return jsonResponse_({
           ok: false,
           conflict: true,
-          existingOptionId: existingOpt.id,
-          existingOptionLabel: existingOpt.label,
+          alreadySpun: true,
+          error: 'Esta persona ya tiró la ruleta. Solo se permite 1 giro por persona.',
+          existingOptionId: lockedOpt.id,
+          existingOptionLabel: lockedOpt.label,
           state: readFullState_(ss)
         });
       }
 
       const tsFormatted = formatNowBogota_();
-      const isManual = Boolean(body.isManual) || body.mode === 'manual';
       const manualReason = String(body.manualReason || '').trim();
       applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, isManual, manualReason);
 
-      const empArea = String(mainSheet.getRange(rowNum, 2).getDisplayValue() || '').trim();
-      const empName = String(mainSheet.getRange(rowNum, 3).getDisplayValue() || '').trim();
       const nextOrder = Math.max(1, histSheet.getLastRow() - 1);
       const pct = Math.round((100 / Math.max(1, options.length)) * 10) / 10;
       const modeLabel = isManual
@@ -563,6 +587,18 @@ function doPost(e) {
       const empId = Number(body.empId);
       const rowNum = findEmployeeRow_(mainSheet, empId);
       if (rowNum < 0) return jsonResponse_({ ok: false, error: 'Colaborador no encontrado.' });
+      const empName = String(mainSheet.getRange(rowNum, 3).getDisplayValue() || '').trim();
+      const curDate = String(mainSheet.getRange(rowNum, 4).getDisplayValue() || '').trim();
+      const curStatus = String(mainSheet.getRange(rowNum, 6).getDisplayValue() || '').toLowerCase();
+      const hasExisting = Boolean(findOptionByLabel_(options, curDate));
+      const spunBefore = (hasExisting && curStatus.indexOf('manual') < 0) || Boolean(hasPriorRouletteSpin_(histSheet, empName, options));
+      if (spunBefore) {
+        return jsonResponse_({
+          ok: false,
+          error: 'No se puede borrar un giro de ruleta ya realizado. Solo se permite 1 giro por persona.',
+          state: readFullState_(ss)
+        });
+      }
       applyPendingToRow_(mainSheet, rowNum);
       bumpVersion_();
       const freshState = readFullState_(ss);

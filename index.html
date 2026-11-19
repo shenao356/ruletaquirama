@@ -30,7 +30,7 @@
         <div style="min-width:0;">
           <h1 class="brand-title truncate">Ruleta de Descansos · Fin de Año 2026</h1>
           <p class="brand-subtitle truncate">
-            Quirama · <span id="headerTotalPeople">44</span> colaboradores · <span id="headerModeLabel">Probabilidad igual (25% por fecha)</span>
+            Quirama · <span id="headerTotalPeople">44</span> colaboradores · 1 giro por persona · <span id="headerModeLabel">Probabilidad igual (25% por fecha)</span>
           </p>
         </div>
       </div>
@@ -107,7 +107,7 @@
           <div class="card-header-row">
             <div>
               <h2 class="section-title">1. Selecciona quién gira</h2>
-              <p class="section-desc">Elige a la persona antes de girar la ruleta</p>
+              <p class="section-desc">Elige a la persona antes de girar (máx. 1 giro por persona)</p>
             </div>
             <button id="btnAddPerson" type="button" class="btn btn-sm">+ Persona</button>
           </div>
@@ -144,12 +144,13 @@
 
         <div class="active-person-banner">
           <div style="min-width:0;flex:1;">
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);">
               <span>2. Turno en la ruleta</span>
               <span id="activeAreaChip" class="area-chip hidden"></span>
+              <span id="activeSpinLimitChip" class="limit-chip">1 giro por persona</span>
             </div>
             <p id="activePersonName" class="active-name truncate">Selecciona una persona de la lista para comenzar</p>
-            <p id="activePersonMeta" class="active-meta">Todas las fechas tienen exactamente la misma probabilidad (25%).</p>
+            <p id="activePersonMeta" class="active-meta">1 único giro por persona · Todas las fechas tienen exactamente la misma probabilidad.</p>
           </div>
           <div id="activeAlreadyAssignedActions" class="hidden">
             <span id="activeExistingDateBadge" class="pill"></span>
@@ -159,7 +160,7 @@
         <div class="wheel-stage">
           <canvas id="wheelCanvas" width="420" height="420" style="width:380px;height:380px;"></canvas>
           <button id="btnHubSpin" type="button" class="wheel-hub-btn" aria-label="Girar ruleta">
-            <span class="hub-title">GIRAR</span>
+            <span id="hubTitle" class="hub-title">GIRAR</span>
             <span id="hubSubtext" class="hub-sub">25%</span>
           </button>
         </div>
@@ -196,7 +197,7 @@
           <div class="result-actions">
             <button id="btnResultNext" type="button" class="btn btn-primary btn-sm">Siguiente persona</button>
             <button id="btnResultDownload" type="button" class="btn btn-sm">Descargar .xlsx</button>
-            <button id="btnResultUndo" type="button" class="btn btn-sm btn-ghost">Deshacer</button>
+            <button id="btnResultUndo" type="button" class="btn btn-sm btn-ghost hidden">Deshacer manual</button>
           </div>
         </div>
 

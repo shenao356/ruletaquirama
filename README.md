@@ -35,6 +35,7 @@ La hoja `Descansos Quirama Fin de Año 2026` ya fue creada en tu carpeta de Goog
 
 ## Funciones principales
 
+- **Solo 1 giro por persona (bloqueo estricto):** cada colaborador puede girar la ruleta una sola vez. Al terminar su tiro, los botones de giro y atajos se bloquean, no existe opción de re-girar ni deshacer un giro, y el backend en Google Apps Script (`LockService`) rechaza cualquier segundo intento desde otro dispositivo.
 - **Multi-dispositivo con bloqueo atómico:** `LockService` en Apps Script impide que dos celulares sorteen a la misma persona al mismo tiempo; todos los dispositivos se actualizan cada 5 segundos.
 - **Fechas editables y ampliables (`📅 Fechas`):** permite modificar, agregar (hasta 12 opciones) o eliminar fechas de descanso en cualquier momento, ajustando automáticamente la ruleta, las probabilidades equitativas (`100% / N`), el resumen por área y el archivo Excel.
 - **Asignación manual con alerta (`✎ Asignar manual`):** permite asignar una fecha manualmente cuando haya un caso especial, mostrando una alerta clara de que **no se está tirando la ruleta** y marcando el registro como `Manual (sin ruleta)` en la tabla, historial, Google Drive y Excel.

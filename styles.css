@@ -1242,6 +1242,35 @@ table.data-table {
   border-radius: 999px;
 }
 
+.limit-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: var(--brand-soft);
+  color: var(--brand-text);
+  border: 1px solid var(--border);
+}
+
+.limit-chip.locked {
+  background: var(--surface-subtle);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.locked-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-right: 8px;
+}
+
 .footer-note {
   text-align: center;
   font-size: 12px;
