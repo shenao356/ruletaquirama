@@ -1,0 +1,9 @@
+{
+  "name": "Ruleta Quirama — Descansos Fin de Año 2026",
+  "short_name": "Ruleta Quirama",
+  "description": "Ruleta equitativa para organizar los descansos de fin de año 2026 del equipo de Quirama con sincronización en Google Drive.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6f7f4",
+  "theme_color": "#15803d"
+}

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ruleta de Descansos Fin de Año 2026 — Quirama</title>
+  <meta name="description" content="Ruleta equitativa multi-dispositivo para sortear los descansos de fin de año 2026 del personal de Quirama, sincronizada en vivo con Google Drive y exportación a Excel (.xlsx)." />
+  <meta name="theme-color" content="#15803d" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2315803d'/%3E%3Ctext x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' fill='%23ffffff' font-family='system-ui,sans-serif' font-weight='800' font-size='26'%3EQ26%3C/text%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <canvas id="confettiCanvas"></canvas>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite">
+    <span id="toastIcon">✓</span>
+    <span id="toastText"></span>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <div class="brand-badge" aria-hidden="true">Q26</div>
+        <div style="min-width:0;">
+          <h1 class="brand-title truncate">Ruleta de Descansos · Fin de Año 2026</h1>
+          <p class="brand-subtitle truncate">
+            Quirama · <span id="headerTotalPeople">44</span> colaboradores · <span id="headerModeLabel">Probabilidad igual (25% por fecha)</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Drive Sync Status Button -->
+        <button id="btnDriveSync" type="button" class="btn" title="Configurar o ver estado de sincronización con Google Drive">
+          <span id="syncDot" class="sync-dot"></span>
+          <span id="syncBtnLabel">Conectar Drive</span>
+        </button>
+
+        <!-- Progress -->
+        <div class="progress-pill">
+          <span class="hide-xs" style="color:var(--text-muted);">Avance</span>
+          <strong id="progressCount" class="tabular">0 / 44</strong>
+          <div class="progress-track">
+            <div id="progressBar" class="progress-fill" style="width:0%;"></div>
+          </div>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button id="btnTheme" type="button" class="btn" title="Cambiar tema claro / oscuro" aria-label="Cambiar tema">
+          <span id="themeIcon" aria-hidden="true">🌙</span>
+        </button>
+
+        <!-- Sound Toggle -->
+        <button id="btnSound" type="button" class="btn" title="Activar o silenciar sonido" aria-label="Sonido">
+          <span id="soundIcon" aria-hidden="true">🔊</span>
+          <span class="hide-xs" id="soundLabel">Sonido</span>
+        </button>
+
+        <!-- Settings -->
+        <button id="btnSettings" type="button" class="btn" title="Reglas de probabilidad y respaldo">
+          <span aria-hidden="true">⚙</span>
+          <span class="hide-xs">Reglas</span>
+        </button>
+
+        <!-- Excel Export CTA -->
+        <button id="btnDownloadXlsxHeader" type="button" class="btn btn-primary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
+          <span>Excel</span>
+          <span id="headerAssignedBadge" class="badge-count tabular">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Subtle Drive Sync Setup Banner (auto-hidden when connected) -->
+  <div id="syncNoticeBar" class="sync-notice-bar">
+    <div class="sync-notice-inner">
+      <span>
+        <strong>Sincronización con Google Drive:</strong> activa la conexión en 1 minuto para que todos los celulares y computadores actualicen la misma hoja en tiempo real.
+      </span>
+      <div class="sync-notice-actions">
+        <button id="btnOpenSyncFromBar" type="button" class="btn btn-sm">Activar sincronización</button>
+        <a id="linkDriveSheetTop" href="#" target="_blank" rel="noopener noreferrer" style="font-weight:600;color:inherit;text-decoration:underline;">Abrir hoja en Drive ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Workspace -->
+  <main class="container">
+    <div class="workspace-grid">
+
+      <!-- 1. Person Selector -->
+      <section class="card" aria-label="Selección de colaborador">
+        <div class="card-header">
+          <div class="card-header-row">
+            <div>
+              <h2 class="section-title">1. Selecciona quién gira</h2>
+              <p class="section-desc">Elige a la persona antes de girar la ruleta</p>
+            </div>
+            <button id="btnAddPerson" type="button" class="btn btn-sm">+ Persona</button>
+          </div>
+
+          <div class="search-row">
+            <div class="search-wrap">
+              <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="searchInput" class="input" type="text" placeholder="Buscar colaborador..." autocomplete="off" />
+            </div>
+            <select id="areaFilter" class="select" aria-label="Filtrar por área">
+              <option value="ALL">Todas las áreas</option>
+            </select>
+          </div>
+
+          <div class="card-header-row">
+            <div class="tabs" role="tablist">
+              <button type="button" data-status="pending" class="tab-btn status-tab active">Pendientes (<span id="countPendingTab">44</span>)</button>
+              <button type="button" data-status="assigned" class="tab-btn status-tab">Sorteados (<span id="countAssignedTab">0</span>)</button>
+              <button type="button" data-status="all" class="tab-btn status-tab">Todos</button>
+            </div>
+
+            <div style="display:flex;gap:6px;">
+              <button id="btnPickNext" type="button" class="btn btn-sm" title="Seleccionar el siguiente pendiente">Siguiente</button>
+              <button id="btnPickRandom" type="button" class="btn btn-sm" title="Elegir un pendiente al azar">Al azar</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="employeeList" class="employee-list custom-scroll"></div>
+      </section>
+
+      <!-- 2. Roulette Stage -->
+      <section class="card stage-card" aria-label="Ruleta de descansos">
+
+        <div class="active-person-banner">
+          <div style="min-width:0;flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);">
+              <span>2. Turno en la ruleta</span>
+              <span id="activeAreaChip" class="area-chip hidden"></span>
+            </div>
+            <p id="activePersonName" class="active-name truncate">Selecciona una persona de la lista para comenzar</p>
+            <p id="activePersonMeta" class="active-meta">Todas las fechas tienen exactamente la misma probabilidad (25%).</p>
+          </div>
+          <div id="activeAlreadyAssignedActions" class="hidden">
+            <span id="activeExistingDateBadge" class="pill"></span>
+          </div>
+        </div>
+
+        <div class="wheel-stage">
+          <canvas id="wheelCanvas" width="420" height="420" style="width:380px;height:380px;"></canvas>
+          <button id="btnHubSpin" type="button" class="wheel-hub-btn" aria-label="Girar ruleta">
+            <span class="hub-title">GIRAR</span>
+            <span id="hubSubtext" class="hub-sub">25%</span>
+          </button>
+        </div>
+
+        <div class="spin-controls">
+          <div id="liveTicker" class="live-ticker">
+            <span>Listo para sortear</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;">
+            <button id="btnSpinMain" type="button" disabled class="btn btn-primary btn-lg">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              <span id="btnSpinText">Girar Ruleta</span>
+            </button>
+            <span class="hide-xs" style="font-size:12px;color:var(--text-muted);">o presiona <kbd class="kbd">Espacio</kbd></span>
+          </div>
+        </div>
+
+        <!-- Result Reveal -->
+        <div id="resultBanner" class="result-banner hidden">
+          <div style="min-width:0;flex:1;">
+            <div class="result-status">
+              <span>✓</span>
+              <span id="resultSavedNote">Guardado automáticamente en el registro</span>
+            </div>
+            <p id="resultWinnerName" class="result-name truncate"></p>
+            <div class="result-meta-row">
+              <span id="resultDatePill" class="pill"></span>
+              <span id="resultDaysText" style="font-size:12px;color:var(--text-muted);"></span>
+            </div>
+          </div>
+          <div class="result-actions">
+            <button id="btnResultNext" type="button" class="btn btn-primary btn-sm">Siguiente persona</button>
+            <button id="btnResultDownload" type="button" class="btn btn-sm">Descargar .xlsx</button>
+            <button id="btnResultUndo" type="button" class="btn btn-sm btn-ghost">Deshacer</button>
+          </div>
+        </div>
+
+        <!-- 4 Date Probability & Live Count Cards -->
+        <div id="dateCardsGrid" class="date-grid"></div>
+      </section>
+    </div>
+
+    <!-- 3. Live Excel & Drive Register -->
+    <section class="card" aria-label="Registro de descansos y exportación Excel">
+      <div class="card-header">
+        <div class="card-header-row">
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;">
+            <div>
+              <h2 class="section-title">3. Registro Excel y Google Drive</h2>
+              <p id="excelSyncStatus" class="section-desc">
+                Cada giro se guarda automáticamente aquí y puede sincronizarse en vivo con la hoja de Google Drive.
+              </p>
+            </div>
+            <div class="tabs" role="tablist">
+              <button type="button" data-table-tab="register" class="tab-btn table-tab active">Tabla de Descansos</button>
+              <button type="button" data-table-tab="summary" class="tab-btn table-tab">Resumen por Área</button>
+              <button type="button" data-table-tab="history" class="tab-btn table-tab">Historial (<span id="historyCountTab">0</span>)</button>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            <a id="linkDriveSheetTable" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-sm">
+              Abrir en Drive ↗
+            </a>
+            <button id="btnSyncNow" type="button" class="btn btn-sm hidden" title="Actualizar datos desde Google Drive">
+              ↻ Sincronizar
+            </button>
+            <button id="btnCopyExcel" type="button" class="btn btn-sm">Copiar para Excel</button>
+            <button id="btnDownloadCsv" type="button" class="btn btn-sm">CSV</button>
+            <button id="btnDownloadXlsxTable" type="button" class="btn btn-primary btn-sm">Descargar Excel (.xlsx)</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="registerFilterBar" class="filter-bar">
+        <div class="filter-group">
+          <span style="color:var(--text-muted);">Filtrar:</span>
+          <select id="tableDateFilter" class="select">
+            <option value="ALL">Todas las fechas y pendientes</option>
+            <option value="ASSIGNED">Solo sorteados</option>
+            <option value="PENDING">Solo pendientes</option>
+            <option value="0">23 y 24 de diciembre</option>
+            <option value="1">25 y 26 de diciembre</option>
+            <option value="2">30 y 31 de diciembre</option>
+            <option value="3">01 y 02 de enero</option>
+          </select>
+          <select id="tableAreaFilter" class="select">
+            <option value="ALL">Todas las áreas</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="checkbox-label">
+            <input id="chkAutoDownload" type="checkbox" />
+            <span>Auto-descargar .xlsx tras cada giro</span>
+          </label>
+          <button id="btnResetAll" type="button" class="link-btn danger">Reiniciar sorteo</button>
+        </div>
+      </div>
+
+      <div class="table-scroll custom-scroll">
+        <table id="tableRegister" class="data-table">
+          <thead>
+            <tr>
+              <th class="center" style="width:44px;">#</th>
+              <th>Área</th>
+              <th>Colaborador</th>
+              <th>Fecha de Descanso</th>
+              <th>Días</th>
+              <th>Hora de Sorteo</th>
+              <th class="right">Acción</th>
+            </tr>
+          </thead>
+          <tbody id="registerTbody"></tbody>
+        </table>
+
+        <table id="tableSummary" class="data-table hidden">
+          <thead>
+            <tr>
+              <th>Área</th>
+              <th class="center">23 y 24 Dic</th>
+              <th class="center">25 y 26 Dic</th>
+              <th class="center">30 y 31 Dic</th>
+              <th class="center">01 y 02 Ene</th>
+              <th class="center">Pendientes</th>
+              <th class="center">Total</th>
+            </tr>
+          </thead>
+          <tbody id="summaryTbody"></tbody>
+        </table>
+
+        <table id="tableHistory" class="data-table hidden">
+          <thead>
+            <tr>
+              <th class="center" style="width:72px;">Giro #</th>
+              <th>Hora</th>
+              <th>Colaborador</th>
+              <th>Área</th>
+              <th>Fecha Obtenida</th>
+              <th>Modo</th>
+            </tr>
+          </thead>
+          <tbody id="historyTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="footer-note">
+      Ruleta de Descansos Fin de Año 2026 · Quirama · Aleatoriedad criptográfica equitativa (<code style="font-family:monospace;">crypto.getRandomValues</code>)
+    </footer>
+  </main>
+
+  <!-- Modal: Google Drive Live Sync -->
+  <div id="modalDriveSync" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="driveModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="driveModalTitle" class="modal-title">Sincronización en vivo con Google Drive</h3>
+        <button type="button" data-close-modal="modalDriveSync" class="modal-close" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <div class="panel-box">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span id="modalSyncDot" class="sync-dot"></span>
+            <strong id="modalSyncStatusText">Sin conectar (modo local)</strong>
+          </div>
+          <a id="linkDriveSheetModal" href="#" target="_blank" rel="noopener noreferrer" style="font-weight:600;">
+            Abrir hoja en Google Drive ↗
+          </a>
+        </div>
+        <p id="modalSyncDetail" style="margin:0;color:var(--text-muted);font-size:12px;">
+          Al conectar la hoja de Google Drive, todos los celulares y computadores verán quién ya giró su ruleta en tiempo real y evitarán duplicados automáticamente.
+        </p>
+      </div>
+
+      <div>
+        <label for="inputSyncUrl" class="label">URL de la Aplicación Web de Google Apps Script (termina en <code>/exec</code>)</label>
+        <input id="inputSyncUrl" class="input" type="url" placeholder="https://script.google.com/macros/s/AKfycb.../exec" />
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <button id="btnConnectDrive" type="button" class="btn btn-primary">Conectar y sincronizar</button>
+        <button id="btnCopyShareLink" type="button" class="btn hidden">Copiar enlace para otros dispositivos</button>
+        <button id="btnPushLocalToDrive" type="button" class="btn hidden">Subir giros locales a Drive</button>
+        <button id="btnDisconnectDrive" type="button" class="btn btn-ghost hidden">Desconectar</button>
+      </div>
+
+      <div class="panel-box">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+          <strong>¿Primera vez? Actívalo en 3 pasos (1 minuto):</strong>
+          <button id="btnCopyGasCode" type="button" class="btn btn-sm">Copiar código Code.gs</button>
+        </div>
+        <ol class="step-list">
+          <li>Abre la hoja <strong>Descansos Quirama Fin de Año 2026</strong> en tu carpeta de Drive y ve a <strong>Extensiones → Apps Script</strong>.</li>
+          <li>Borra el contenido, pega el código de <strong>Code.gs</strong> (botón arriba) y guarda (<kbd class="kbd">Ctrl+S</kbd>).</li>
+          <li>Haz clic en <strong>Implementar → Nueva implementación → Aplicación web</strong>, elige <em>Ejecutar como: Yo</em> y <em>Quién tiene acceso: Cualquier usuario</em>, copia la URL <code>/exec</code> y pégala arriba.</li>
+        </ol>
+        <p style="margin:4px 0 0;font-size:11.5px;color:var(--text-muted);">
+          Tip: una vez conectada, usa <strong>Copiar enlace para otros dispositivos</strong> para compartirlo por WhatsApp o pega esa URL en <code>config.js</code> del repositorio para que quede permanente.
+        </p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" data-close-modal="modalDriveSync" class="btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Add Person -->
+  <div id="modalAddPerson" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="addPersonTitle">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3 id="addPersonTitle" class="modal-title">Agregar colaborador</h3>
+        <button type="button" data-close-modal="modalAddPerson" class="modal-close" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="formAddPerson" style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <label for="newPersonName" class="label">Nombre completo</label>
+          <input id="newPersonName" class="input" type="text" required placeholder="Ej. PEREZ GOMEZ MARIA CAMILA" />
+        </div>
+        <div>
+          <label for="newPersonArea" class="label">Área</label>
+          <select id="newPersonArea" class="select">
+            <option value="Administrativa">Administrativa</option>
+            <option value="Recepción">Recepción</option>
+            <option value="Ama de Llaves">Ama de Llaves</option>
+            <option value="A&B">A&amp;B</option>
+            <option value="Mantenimiento">Mantenimiento</option>
+            <option value="Mantenimiento Zonas Húmedas">Mantenimiento Zonas Húmedas</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" data-close-modal="modalAddPerson" class="btn">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Agregar y seleccionar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Settings & Backup -->
+  <div id="modalSettings" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="settingsTitle" class="modal-title">Reglas de Probabilidad y Respaldo</h3>
+        <button type="button" data-close-modal="modalSettings" class="modal-close" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <label class="radio-option">
+          <input type="radio" name="probMode" value="equal" style="margin-top:3px;" />
+          <div>
+            <strong>Probabilidad idéntica en cada giro — 25% por fecha (Recomendado)</strong>
+            <p style="margin:4px 0 0;color:var(--text-muted);font-size:12px;">
+              Cada persona tiene exactamente un 25% de probabilidad para cada una de las 4 fechas sin importar el orden en que pase.
+            </p>
+          </div>
+        </label>
+
+        <label class="radio-option">
+          <input type="radio" name="probMode" value="balanced" style="margin-top:3px;" />
+          <div style="width:100%;">
+            <strong>Cupos equilibrados (urna justa sin reposición)</strong>
+            <p style="margin:4px 0 0;color:var(--text-muted);font-size:12px;">
+              Reparte el total de colaboradores equitativamente (44 ÷ 4 = 11 cupos por fecha). Cuando una fecha llena su cupo se retira de la ruleta.
+            </p>
+            <div id="quotaInputsWrap" class="quota-grid hidden">
+              <label class="quota-item"><span>23 y 24 Dic</span><input id="quota0" class="input tabular" type="number" min="1" max="99" value="11" /></label>
+              <label class="quota-item"><span>25 y 26 Dic</span><input id="quota1" class="input tabular" type="number" min="1" max="99" value="11" /></label>
+              <label class="quota-item"><span>30 y 31 Dic</span><input id="quota2" class="input tabular" type="number" min="1" max="99" value="11" /></label>
+              <label class="quota-item"><span>01 y 02 Ene</span><input id="quota3" class="input tabular" type="number" min="1" max="99" value="11" /></label>
+            </div>
+          </div>
+        </label>
+
+        <div class="panel-box">
+          <strong>Respaldo manual (JSON)</strong>
+          <p style="margin:0;color:var(--text-muted);font-size:12px;">Guarda o restaura una copia del avance local en cualquier momento.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;padding-top:4px;">
+            <button id="btnExportBackup" type="button" class="btn btn-sm">Exportar respaldo JSON</button>
+            <label class="btn btn-sm" style="cursor:pointer;">
+              Importar respaldo JSON
+              <input id="inputImportBackup" type="file" accept=".json" class="hidden" />
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" data-close-modal="modalSettings" class="btn">Cerrar</button>
+        <button id="btnSaveSettings" type="button" class="btn btn-primary">Aplicar cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirm -->
+  <div id="modalConfirm" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal modal-sm">
+      <h3 id="confirmTitle" class="modal-title">Confirmar acción</h3>
+      <p id="confirmMessage" style="margin:0;font-size:13px;color:var(--text-muted);line-height:1.5;"></p>
+      <div class="modal-footer">
+        <button id="btnConfirmCancel" type="button" class="btn">Cancelar</button>
+        <button id="btnConfirmOk" type="button" class="btn btn-danger">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
