@@ -84,6 +84,7 @@
   ];
 
   const STORAGE_KEY = 'quirama_ruleta_descansos_2026_v2';
+  const EQUITY_SCHEMA_VERSION = 3;
   const SYNC_URL_KEY = 'quirama_sync_url_v1';
   const THEME_KEY = 'quirama_theme_v1';
   const TWO_PI = Math.PI * 2;
@@ -216,7 +217,8 @@
       options,
       assignments: {},
       history: [],
-      mode: 'equal',
+      mode: 'area_balanced',
+      equityVersion: EQUITY_SCHEMA_VERSION,
       quotas: normalizeQuotas(null, options, INITIAL_EMPLOYEES.length),
       soundOn: true,
       autoDownload: false,
@@ -244,9 +246,18 @@
           };
         }
       }
+      const prevVer = Number(parsed.equityVersion || 0);
+      let resolvedMode = ['area_balanced', 'balanced', 'equal'].includes(parsed.mode)
+        ? parsed.mode
+        : 'area_balanced';
+      if (prevVer < EQUITY_SCHEMA_VERSION && resolvedMode === 'equal') {
+        resolvedMode = 'area_balanced';
+      }
       return {
         ...defaultState(),
         ...parsed,
+        mode: resolvedMode,
+        equityVersion: EQUITY_SCHEMA_VERSION,
         options: opts,
         assignments: normalizedAssignments,
         quotas: normalizeQuotas(parsed.quotas, opts, parsed.employees.length)
@@ -336,7 +347,7 @@
       nextAssignments[empId] = {
         optionId: String(rec.optionId),
         timestamp: rec.timestamp || '',
-        mode: isManual ? 'manual' : (rec.mode || 'equal'),
+        mode: isManual ? 'manual' : (rec.mode || state.mode || 'area_balanced'),
         isManual,
         manualReason: String(rec.manualReason || (keepLocalManual ? prev.manualReason : '') || '')
       };
@@ -372,17 +383,29 @@
               hReason = prevManualByEmpOpt.get(k);
             }
           }
+          const hModeTxt = String(h.modeText || '').toLowerCase();
+          const inferredMode = hManual
+            ? 'manual'
+            : (h.mode === 'area_balanced' || hModeTxt.includes('área') || hModeTxt.includes('area')
+                ? 'area_balanced'
+                : (h.mode === 'balanced' || hModeTxt.includes('cupo') ? 'balanced' : (h.mode || 'equal')));
           return {
             ...h,
             optionId: optIdStr,
-            mode: hManual ? 'manual' : (h.mode || 'equal'),
+            mode: inferredMode,
             isManual: hManual,
             manualReason: hReason
           };
         })
       : [];
 
-    if (remote.mode === 'equal' || remote.mode === 'balanced') state.mode = remote.mode;
+    if (remoteVer >= 3) {
+      if (['area_balanced', 'balanced', 'equal'].includes(remote.mode)) {
+        state.mode = remote.mode;
+      }
+    } else if (remote.mode === 'balanced') {
+      state.mode = 'balanced';
+    }
     if (remote.quotas) {
       state.quotas = normalizeQuotas(remote.quotas, state.options, state.employees.length);
     }
@@ -601,58 +624,351 @@
     return true;
   }
 
-  function getWheelSectors(excludeEmpId = null) {
-    const opts = state.options;
-    const repeatEqual = opts.length <= 5 ? 2 : 1;
+  let equityCacheKey = '';
+  let equityCacheModel = null;
 
-    if (state.mode === 'equal') {
-      const list = [];
-      for (let r = 0; r < repeatEqual; r++) {
-        for (const opt of opts) list.push(opt);
+  function buildEquityCacheKey() {
+    const optPart = state.options.map(o => o.id).join(',');
+    const empPart = state.employees.map(e => `${e.id}:${e.area}`).join('|');
+    const asgPart = Object.keys(state.assignments)
+      .sort()
+      .map(k => `${k}=${state.assignments[k] ? state.assignments[k].optionId : ''}`)
+      .join(',');
+    return `${optPart}#${empPart}#${asgPart}`;
+  }
+
+  function waterFill(counts, pending) {
+    const k = counts.length;
+    if (k === 0) {
+      return { level: 0, baseNeed: [], extrasLeft: 0, eligibleForExtra: [], minAfterBase: [] };
+    }
+    if (pending <= 0) {
+      return {
+        level: Math.min(...counts),
+        baseNeed: Array(k).fill(0),
+        extrasLeft: 0,
+        eligibleForExtra: Array(k).fill(false),
+        minAfterBase: counts.slice()
+      };
+    }
+    let L = Math.min(...counts);
+    while (true) {
+      const nextL = L + 1;
+      let needed = 0;
+      for (let j = 0; j < k; j++) {
+        if (counts[j] < nextL) needed += (nextL - counts[j]);
       }
-      const slice = TWO_PI / list.length;
-      return list.map((opt, idx) => ({
-        index: idx,
-        optionId: opt.id,
-        option: opt,
-        startAngle: idx * slice,
-        endAngle: (idx + 1) * slice,
-        weight: 1 / list.length
-      }));
+      if (needed <= pending) {
+        L = nextL;
+      } else {
+        break;
+      }
+    }
+    const baseNeed = Array(k).fill(0);
+    let baseSum = 0;
+    const minAfterBase = Array(k).fill(0);
+    const eligibleForExtra = Array(k).fill(false);
+    for (let j = 0; j < k; j++) {
+      baseNeed[j] = counts[j] < L ? (L - counts[j]) : 0;
+      baseSum += baseNeed[j];
+      minAfterBase[j] = counts[j] + baseNeed[j];
+      eligibleForExtra[j] = counts[j] <= L;
+    }
+    const extrasLeft = pending - baseSum;
+    return { level: L, baseNeed, extrasLeft, eligibleForExtra, minAfterBase };
+  }
+
+  function minCostBalance(activeAreas, minFinal, numOptions) {
+    let baseSqSum = 0;
+    for (let j = 0; j < numOptions; j++) {
+      baseSqSum += minFinal[j] * minFinal[j];
+    }
+    let totalExtras = 0;
+    for (let i = 0; i < activeAreas.length; i++) {
+      totalExtras += activeAreas[i].extrasLeft;
+    }
+    if (totalExtras <= 0) return baseSqSum;
+
+    const M = activeAreas.length;
+    const S = 0;
+    const dateOffset = 1 + M;
+    const T = dateOffset + numOptions;
+    const N = T + 1;
+    const adj = Array.from({ length: N }, () => []);
+
+    function addEdge(u, v, cap, cost) {
+      const fwd = { to: v, rev: adj[v].length, cap, cost };
+      const bwd = { to: u, rev: adj[u].length, cap: 0, cost: -cost };
+      adj[u].push(fwd);
+      adj[v].push(bwd);
     }
 
-    const counts = getAssignedCountsMap(excludeEmpId);
-    const remaining = {};
-    let totalRem = 0;
-    opts.forEach(o => {
-      const q = Math.max(1, Number(state.quotas[o.id]) || 1);
-      const rem = Math.max(0, q - (counts[o.id] || 0));
-      remaining[o.id] = rem;
-      totalRem += rem;
+    const dateDeg = Array(numOptions).fill(0);
+    for (let i = 0; i < M; i++) {
+      const a = activeAreas[i];
+      if (a.extrasLeft <= 0) continue;
+      addEdge(S, 1 + i, a.extrasLeft, 0);
+      for (let j = 0; j < numOptions; j++) {
+        if (a.eligibleForExtra[j]) {
+          addEdge(1 + i, dateOffset + j, 1, 0);
+          dateDeg[j]++;
+        }
+      }
+    }
+
+    for (let j = 0; j < numOptions; j++) {
+      for (let r = 1; r <= dateDeg[j]; r++) {
+        const nextVal = minFinal[j] + r;
+        addEdge(dateOffset + j, T, 1, 2 * nextVal - 1);
+      }
+    }
+
+    let addedCost = 0;
+    const INF = 1e12;
+    for (let step = 0; step < totalExtras; step++) {
+      const dist = Array(N).fill(INF);
+      const prevNode = Array(N).fill(-1);
+      const prevEdge = Array(N).fill(-1);
+      const inQueue = Array(N).fill(false);
+      const queue = [S];
+      dist[S] = 0;
+      inQueue[S] = true;
+
+      for (let qHead = 0; qHead < queue.length; qHead++) {
+        const u = queue[qHead];
+        inQueue[u] = false;
+        const edges = adj[u];
+        for (let ei = 0; ei < edges.length; ei++) {
+          const e = edges[ei];
+          if (e.cap > 0 && dist[u] + e.cost < dist[e.to]) {
+            dist[e.to] = dist[u] + e.cost;
+            prevNode[e.to] = u;
+            prevEdge[e.to] = ei;
+            if (!inQueue[e.to]) {
+              inQueue[e.to] = true;
+              queue.push(e.to);
+            }
+          }
+        }
+      }
+
+      if (dist[T] >= INF) break;
+      addedCost += dist[T];
+      let cur = T;
+      while (cur !== S) {
+        const p = prevNode[cur];
+        const ei = prevEdge[cur];
+        const e = adj[p][ei];
+        e.cap -= 1;
+        adj[cur][e.rev].cap += 1;
+        cur = p;
+      }
+    }
+
+    return baseSqSum + addedCost;
+  }
+
+  function computeEquityModel(options = state.options, employees = state.employees, assignments = state.assignments) {
+    const useCache = options === state.options && employees === state.employees && assignments === state.assignments;
+    if (useCache) {
+      const key = buildEquityCacheKey();
+      if (key === equityCacheKey && equityCacheModel) return equityCacheModel;
+      equityCacheKey = key;
+    }
+
+    const k = options.length;
+    const optIndexById = {};
+    options.forEach((o, idx) => { optIndexById[String(o.id)] = idx; });
+
+    const areaList = [];
+    const areaMap = {};
+    const globalCounts = Array(k).fill(0);
+
+    for (const emp of employees) {
+      const area = emp.area || 'General';
+      if (!areaMap[area]) {
+        areaMap[area] = { area, total: 0, pending: 0, counts: Array(k).fill(0) };
+        areaList.push(areaMap[area]);
+      }
+      const entry = areaMap[area];
+      entry.total++;
+      const rec = assignments[emp.id];
+      const optIdx = rec && optIndexById[String(rec.optionId)] !== undefined ? optIndexById[String(rec.optionId)] : -1;
+      if (optIdx >= 0) {
+        entry.counts[optIdx]++;
+        globalCounts[optIdx]++;
+      } else {
+        entry.pending++;
+      }
+    }
+
+    const minFinal = Array(k).fill(0);
+    const areaStates = areaList.map(entry => {
+      const wf = waterFill(entry.counts, entry.pending);
+      for (let j = 0; j < k; j++) minFinal[j] += wf.minAfterBase[j];
+      return {
+        ...entry,
+        wf,
+        minTarget: Math.floor(entry.total / Math.max(1, k)),
+        maxTarget: Math.ceil(entry.total / Math.max(1, k))
+      };
     });
 
-    if (totalRem <= 0) {
-      const list = [];
-      for (let r = 0; r < repeatEqual; r++) {
-        for (const opt of opts) list.push(opt);
-      }
-      const slice = TWO_PI / list.length;
-      return list.map((opt, idx) => ({
-        index: idx,
-        optionId: opt.id,
-        option: opt,
-        startAngle: idx * slice,
-        endAngle: (idx + 1) * slice,
-        weight: 1 / list.length
+    const activeExtraAreas = areaStates
+      .filter(a => a.wf.extrasLeft > 0)
+      .map(a => ({
+        area: a.area,
+        extrasLeft: a.wf.extrasLeft,
+        eligibleForExtra: a.wf.eligibleForExtra.slice()
       }));
+
+    const totalExtras = activeExtraAreas.reduce((s, a) => s + a.extrasLeft, 0);
+    const optCost = minCostBalance(activeExtraAreas, minFinal, k);
+    const globalWF = waterFill(minFinal, totalExtras);
+    const globalMaxCapById = {};
+    const globalCountsById = {};
+    const globalWeightsById = {};
+
+    options.forEach((o, j) => {
+      globalCountsById[o.id] = globalCounts[j];
+      globalMaxCapById[o.id] = Math.max(minFinal[j], globalWF.level + (globalWF.extrasLeft > 0 ? 1 : 0));
+      globalWeightsById[o.id] = 0;
+    });
+
+    const byArea = {};
+    for (const a of areaStates) {
+      const feasibleExtras = [];
+      const feasibleMap = Array(k).fill(false);
+
+      if (a.wf.extrasLeft > 0) {
+        const activeIdx = activeExtraAreas.findIndex(x => x.area === a.area);
+        for (let j = 0; j < k; j++) {
+          if (!a.wf.eligibleForExtra[j]) continue;
+          const nextMinFinal = minFinal.slice();
+          nextMinFinal[j] += 1;
+          const nextActive = activeExtraAreas.map((item, idx) => {
+            if (idx !== activeIdx) return item;
+            const nextElig = item.eligibleForExtra.slice();
+            nextElig[j] = false;
+            return {
+              area: item.area,
+              extrasLeft: item.extrasLeft - 1,
+              eligibleForExtra: nextElig
+            };
+          }).filter(item => item.extrasLeft > 0);
+
+          const candidateCost = minCostBalance(nextActive, nextMinFinal, k);
+          if (candidateCost === optCost) {
+            feasibleExtras.push(j);
+            feasibleMap[j] = true;
+          }
+        }
+        // Fallback safety (should never trigger): allow all eligible dates if exact match somehow empty
+        if (feasibleExtras.length === 0) {
+          for (let j = 0; j < k; j++) {
+            if (a.wf.eligibleForExtra[j]) {
+              feasibleExtras.push(j);
+              feasibleMap[j] = true;
+            }
+          }
+        }
+      }
+
+      const weightsById = {};
+      const probsById = {};
+      const countsById = {};
+      const minCapById = {};
+      const maxCapById = {};
+      let weightSum = 0;
+
+      for (let j = 0; j < k; j++) {
+        const optId = options[j].id;
+        const extraShare = feasibleMap[j] && feasibleExtras.length > 0
+          ? (a.wf.extrasLeft / feasibleExtras.length)
+          : 0;
+        const w = a.wf.baseNeed[j] + extraShare;
+        weightsById[optId] = w;
+        weightSum += w;
+        countsById[optId] = a.counts[j];
+        minCapById[optId] = a.wf.minAfterBase[j];
+        maxCapById[optId] = Math.max(a.counts[j], a.wf.minAfterBase[j] + (feasibleMap[j] ? 1 : 0));
+        globalWeightsById[optId] += w;
+      }
+
+      options.forEach(o => {
+        probsById[o.id] = weightSum > 0 ? (weightsById[o.id] / weightSum) : 0;
+      });
+
+      byArea[a.area] = {
+        area: a.area,
+        total: a.total,
+        pending: a.pending,
+        minTarget: a.minTarget,
+        maxTarget: a.maxTarget,
+        countsById,
+        minCapById,
+        maxCapById,
+        weightsById,
+        probsById,
+        extrasLeft: a.wf.extrasLeft,
+        feasibleExtrasCount: feasibleExtras.length
+      };
     }
 
-    const activeOpts = opts.filter(o => remaining[o.id] > 0);
-    const repeat = activeOpts.length >= 2 && activeOpts.length <= 5 ? 2 : 1;
+    const totalEmps = employees.length;
+    const model = {
+      totalEmps,
+      globalMinTarget: Math.floor(totalEmps / Math.max(1, k)),
+      globalMaxTarget: Math.ceil(totalEmps / Math.max(1, k)),
+      globalCountsById,
+      globalMaxCapById,
+      globalWeightsById,
+      byArea
+    };
+
+    if (useCache) equityCacheModel = model;
+    return model;
+  }
+
+  function formatRangeTarget(minVal, maxVal) {
+    return minVal === maxVal ? String(minVal) : `${minVal}–${maxVal}`;
+  }
+
+  function getModeShortLabel(mode = state.mode) {
+    if (mode === 'area_balanced') return 'Equitativo por área y fecha';
+    if (mode === 'balanced') return 'Cupos globales';
+    return 'Azar libre';
+  }
+
+  function buildEqualSectors(opts) {
+    const repeatEqual = opts.length <= 5 ? 2 : 1;
+    const list = [];
+    for (let r = 0; r < repeatEqual; r++) {
+      for (const opt of opts) list.push(opt);
+    }
+    const slice = TWO_PI / list.length;
+    return list.map((opt, idx) => ({
+      index: idx,
+      optionId: opt.id,
+      option: opt,
+      startAngle: idx * slice,
+      endAngle: (idx + 1) * slice,
+      weight: 1 / list.length
+    }));
+  }
+
+  function buildWeightedSectors(opts, weightsById) {
+    const activeOpts = opts.filter(o => (weightsById[o.id] || 0) > 1e-9);
+    if (activeOpts.length === 0) return buildEqualSectors(opts);
+
+    const totalW = activeOpts.reduce((sum, o) => sum + (weightsById[o.id] || 0), 0);
+    if (totalW <= 0) return buildEqualSectors(opts);
+
+    const repeat = activeOpts.length === 1 ? 4 : (activeOpts.length <= 5 ? 2 : 1);
     const raw = [];
     for (let r = 0; r < repeat; r++) {
       for (const opt of activeOpts) {
-        raw.push({ option: opt, weight: (remaining[opt.id] / totalRem) / repeat });
+        raw.push({ option: opt, weight: ((weightsById[opt.id] || 0) / totalW) / repeat });
       }
     }
     let cursor = 0;
@@ -663,7 +979,7 @@
         optionId: item.option.id,
         option: item.option,
         startAngle: cursor,
-        endAngle: cursor + span,
+        endAngle: idx === raw.length - 1 ? TWO_PI : cursor + span,
         weight: item.weight
       };
       cursor += span;
@@ -671,10 +987,56 @@
     });
   }
 
-  function getOptionProbabilitiesMap(excludeEmpId = null) {
-    const sectors = getWheelSectors(excludeEmpId);
+  function getWheelSectors(forEmpId = null) {
+    const opts = state.options;
+
+    if (state.mode === 'equal') {
+      return buildEqualSectors(opts);
+    }
+
+    if (state.mode === 'area_balanced') {
+      const model = computeEquityModel();
+      const emp = forEmpId !== null ? state.employees.find(e => e.id === Number(forEmpId)) : null;
+      if (emp && model.byArea[emp.area] && model.byArea[emp.area].pending > 0) {
+        return buildWeightedSectors(opts, model.byArea[emp.area].weightsById);
+      }
+      return buildWeightedSectors(opts, model.globalWeightsById);
+    }
+
+    // Legacy 'balanced' mode (global custom quotas)
+    const counts = getAssignedCountsMap();
+    const remaining = {};
+    let totalRem = 0;
+    opts.forEach(o => {
+      const q = Math.max(1, Number(state.quotas[o.id]) || 1);
+      const rem = Math.max(0, q - (counts[o.id] || 0));
+      remaining[o.id] = rem;
+      totalRem += rem;
+    });
+
+    if (totalRem <= 0) return buildEqualSectors(opts);
+    return buildWeightedSectors(opts, remaining);
+  }
+
+  function getOptionProbabilitiesMap(forEmpId = null) {
     const probs = {};
     state.options.forEach(o => { probs[o.id] = 0; });
+
+    if (state.mode === 'area_balanced') {
+      const model = computeEquityModel();
+      const emp = forEmpId !== null ? state.employees.find(e => e.id === Number(forEmpId)) : null;
+      if (emp && model.byArea[emp.area]) {
+        const areaInfo = model.byArea[emp.area];
+        if (areaInfo.pending > 0) {
+          state.options.forEach(o => { probs[o.id] = areaInfo.probsById[o.id] || 0; });
+          return probs;
+        }
+        // Area is 100% completed: probabilities for this area are 0%
+        return probs;
+      }
+    }
+
+    const sectors = getWheelSectors(forEmpId);
     for (const s of sectors) {
       probs[s.optionId] = (probs[s.optionId] || 0) + s.weight;
     }
@@ -950,9 +1312,12 @@
     const assignedCount = Object.keys(state.assignments).length;
     const generatedAt = formatDateTimeEs(new Date().toISOString());
     const eqPct = formatPct(1 / Math.max(1, opts.length));
-    const modeDesc = state.mode === 'equal'
-      ? `Probabilidad igual (${eqPct} cada fecha)`
-      : `Cupos equilibrados (${opts.map(o => state.quotas[o.id] || 0).join(' / ')})`;
+    const equityModel = computeEquityModel();
+    const modeDesc = state.mode === 'area_balanced'
+      ? `Equitativo estricto por área y fecha (${formatRangeTarget(equityModel.globalMinTarget, equityModel.globalMaxTarget)} por fecha)`
+      : (state.mode === 'balanced'
+          ? `Cupos globales (${opts.map(o => state.quotas[o.id] || 0).join(' / ')})`
+          : `Azar libre (${eqPct} cada fecha)`);
 
     // Stylesheet indices:
     // 0: default | 1: title | 2: body left | 3: body center
@@ -1158,7 +1523,9 @@
       const isMan = Boolean(item.isManual || item.mode === 'manual');
       const modeText = item.modeText || (isMan
         ? (item.manualReason ? `Manual (sin ruleta) — ${item.manualReason}` : 'Manual (sin ruleta)')
-        : (item.mode === 'balanced' ? 'Cupos equilibrados' : `Probabilidad igual (${eqPct})`));
+        : (item.mode === 'area_balanced'
+            ? 'Equitativo por área y fecha'
+            : (item.mode === 'balanced' ? 'Cupos globales' : `Azar libre (${eqPct})`)));
       s3Rows.push(
         `<row r="${r}" ht="20" customHeight="1">` +
         cellNum(`A${r}`, item.order || (idx + 1), 3) +
@@ -1330,7 +1697,7 @@
     drawWheel();
   }
 
-  function drawWheel() {
+  function drawWheel(overrideSectors = null) {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const size = wheelCanvas.width / dpr;
     const cx = size / 2;
@@ -1369,7 +1736,9 @@
     wCtx.fillStyle = '#181c1a';
     wCtx.fill();
 
-    const sectors = getWheelSectors(selectedPersonId);
+    const sectors = Array.isArray(overrideSectors) && overrideSectors.length > 0
+      ? overrideSectors
+      : getWheelSectors(selectedPersonId);
 
     wCtx.save();
     wCtx.translate(cx, cy);
@@ -1626,14 +1995,14 @@
       pointerVelocity *= 0.72;
       pointerDeflection += pointerVelocity;
 
-      drawWheel();
+      drawWheel(sectors);
 
       if (t < 1) {
         requestAnimationFrame(animate);
       } else {
         wheelAngle = normalizeAngle(startAngle + totalDelta);
         pointerDeflection = 0;
-        drawWheel();
+        drawWheel(sectors);
         commitAssignment(emp, winningSector.option, { forceOverwrite: false, isManual: false, manualReason: '' });
       }
     }
@@ -1716,7 +2085,19 @@
         forceOverwrite: Boolean(isManual && forceOverwrite)
       });
 
-      if (res && res.conflict) {
+      if (res && res.quotaConflict) {
+        if (!res.state) {
+          if (prevAssignment) state.assignments[emp.id] = prevAssignment;
+          else delete state.assignments[emp.id];
+          state.history = state.history.filter(h => h.order !== histItem.order);
+          saveState();
+        }
+        banner.classList.add('hidden');
+        document.getElementById('liveTicker').textContent = 'Cupo actualizado · Gira nuevamente';
+        renderAll();
+        showToast(res.error || '⚠️ Esa fecha acaba de completar su cupo equitativo en otro dispositivo. Gira nuevamente.', '⚠️');
+        return;
+      } else if (res && res.conflict) {
         const remoteRec = state.assignments[emp.id];
         finalOption = getOptionById(res.existingOptionId)
           || (remoteRec && getOptionById(remoteRec.optionId))
@@ -1782,19 +2163,37 @@
     const currentOptId = currentRec ? currentRec.optionId : state.options[0].id;
     document.getElementById('manualReasonInput').value = currentRec && currentRec.manualReason ? currentRec.manualReason : '';
 
+    const eqModel = computeEquityModel();
+    const areaInfo = eqModel.byArea[emp.area];
+
     const listEl = document.getElementById('manualOptionsList');
-    listEl.innerHTML = state.options.map((opt) => `
+    listEl.innerHTML = state.options.map((opt) => {
+      const gCount = eqModel.globalCountsById[opt.id] || 0;
+      const gCap = eqModel.globalMaxCapById[opt.id] || eqModel.globalMaxTarget;
+      const aCount = areaInfo ? (areaInfo.countsById[opt.id] || 0) : 0;
+      const aMaxTarget = areaInfo ? areaInfo.maxTarget : 0;
+      const isAlreadyThisOpt = currentRec && String(currentRec.optionId) === String(opt.id);
+      const wouldExceedArea = areaInfo && !isAlreadyThisOpt && (aCount + 1 > aMaxTarget);
+      const wouldExceedGlobal = !isAlreadyThisOpt && (gCount + 1 > eqModel.globalMaxTarget);
+      const quotaHint = `${emp.area}: ${aCount}/${aMaxTarget} · General: ${gCount}/${gCap}`;
+      const warnTag = (wouldExceedArea || wouldExceedGlobal)
+        ? `<span class="manual-quota-warn">⚠️ Supera cupo equitativo</span>`
+        : '';
+
+      return `
       <label class="manual-option-item">
         <div style="display:flex;align-items:center;gap:10px;min-width:0;">
           <input type="radio" name="manualDateOption" value="${xmlEscape(opt.id)}" ${opt.id === currentOptId ? 'checked' : ''} />
           <span class="date-dot" style="background:${opt.colorMain};"></span>
           <div style="min-width:0;">
             <strong style="font-size:13px;display:block;">${xmlEscape(opt.label)}</strong>
-            <span style="font-size:11.5px;color:var(--text-muted);">${xmlEscape(opt.days)}</span>
+            <span style="font-size:11.5px;color:var(--text-muted);display:block;">${xmlEscape(opt.days)}</span>
+            <span class="manual-quota-hint tabular">${xmlEscape(quotaHint)} ${warnTag}</span>
           </div>
         </div>
         <span class="pill" style="background:${opt.pillBg};color:${opt.pillText};">${xmlEscape(opt.shortLabel)}</span>
-      </label>`).join('');
+      </label>`;
+    }).join('');
 
     renderEmployeeList();
     renderActivePerson();
@@ -1824,8 +2223,15 @@
     const previewEl = document.getElementById('manageDatesProbPreview');
     const warnEl = document.getElementById('manageDatesWarning');
 
-    const eqPct = formatPct(1 / Math.max(1, draftDates.length));
-    previewEl.textContent = `${draftDates.length} fechas activas · Probabilidad igual: ${eqPct} cada una`;
+    const k = Math.max(1, draftDates.length);
+    const totalEmps = state.employees.length;
+    const eqPct = formatPct(1 / k);
+    const abCount = state.employees.filter(e => e.area === 'A&B').length;
+    const globalRange = formatRangeTarget(Math.floor(totalEmps / k), Math.ceil(totalEmps / k));
+    const abRange = formatRangeTarget(Math.floor(abCount / k), Math.ceil(abCount / k));
+    previewEl.textContent = state.mode === 'area_balanced'
+      ? `${draftDates.length} fechas activas · Reparto equitativo: ${globalRange} personas/fecha (A&B: ${abRange}/fecha)`
+      : `${draftDates.length} fechas activas · Probabilidad base: ${eqPct} cada una`;
 
     // Check if any originally assigned option was deleted in draft
     const draftIds = new Set(draftDates.map(d => d.id));
@@ -2012,11 +2418,14 @@
     const pending = total - assigned;
     const pct = total > 0 ? Math.round((assigned / total) * 100) : 0;
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
+    const model = computeEquityModel();
 
     document.getElementById('headerTotalPeople').textContent = total;
-    document.getElementById('headerModeLabel').textContent = state.mode === 'equal'
-      ? `Probabilidad igual (${eqPct} por fecha)`
-      : `Cupos equilibrados (${state.options.length} fechas)`;
+    document.getElementById('headerModeLabel').textContent = state.mode === 'area_balanced'
+      ? `Equitativo por área y fecha (${formatRangeTarget(model.globalMinTarget, model.globalMaxTarget)}/fecha)`
+      : (state.mode === 'balanced'
+          ? `Cupos globales (${state.options.length} fechas)`
+          : `Azar libre (${eqPct} por fecha)`);
     document.getElementById('progressCount').textContent = `${assigned} / ${total}`;
     document.getElementById('progressBar').style.width = `${pct}%`;
     document.getElementById('headerAssignedBadge').textContent = assigned;
@@ -2117,9 +2526,18 @@
         const probs = getOptionProbabilitiesMap(emp.id);
         limitChip.textContent = '1 giro disponible';
         limitChip.classList.remove('locked');
-        metaEl.textContent = state.mode === 'equal'
-          ? `1 único giro permitido · Probabilidad idéntica: ${eqPct} para cada una de las ${state.options.length} fechas.`
-          : `1 único giro permitido · Probabilidades activas: ${state.options.map(o => formatPct(probs[o.id] || 0)).join(' · ')}.`;
+        if (state.mode === 'area_balanced') {
+          const model = computeEquityModel();
+          const areaInfo = model.byArea[emp.area];
+          const areaRange = areaInfo ? formatRangeTarget(areaInfo.minTarget, areaInfo.maxTarget) : '—';
+          const globalRange = formatRangeTarget(model.globalMinTarget, model.globalMaxTarget);
+          const openCount = state.options.filter(o => (probs[o.id] || 0) > 1e-6).length;
+          metaEl.textContent = `Equitativo estricto · ${emp.area} (${areaInfo ? areaInfo.total : 0}): ${areaRange}/fecha · General: ${globalRange}/fecha · ${openCount} ${openCount === 1 ? 'opción disponible' : 'opciones disponibles'}.`;
+        } else if (state.mode === 'balanced') {
+          metaEl.textContent = `1 único giro permitido · Cupos globales · Probabilidades: ${state.options.map(o => formatPct(probs[o.id] || 0)).join(' · ')}.`;
+        } else {
+          metaEl.textContent = `1 único giro permitido · Azar libre: ${eqPct} para cada una de las ${state.options.length} fechas.`;
+        }
         badgeWrap.classList.add('hidden');
       }
     }
@@ -2157,7 +2575,7 @@
     } else {
       btnText.textContent = 'Girar Ruleta';
       hubTitle.textContent = 'GIRAR';
-      hubSub.textContent = state.mode === 'equal' ? eqPct : 'Urna';
+      hubSub.textContent = state.mode === 'area_balanced' ? 'Equit.' : (state.mode === 'equal' ? eqPct : 'Urna');
     }
   }
 
@@ -2166,28 +2584,72 @@
     const probs = getOptionProbabilitiesMap(selectedPersonId);
     const grid = document.getElementById('dateCardsGrid');
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
+    const model = computeEquityModel();
+    const selectedEmp = state.employees.find(e => e.id === selectedPersonId) || null;
+    const selectedAreaInfo = selectedEmp ? model.byArea[selectedEmp.area] : null;
 
-    document.getElementById('dateGridSummaryLabel').textContent = state.mode === 'equal'
-      ? `${state.options.length} fechas en la ruleta · ${eqPct} cada una`
-      : `${state.options.length} fechas en la ruleta · Cupos equilibrados`;
+    if (state.mode === 'area_balanced') {
+      const gRange = formatRangeTarget(model.globalMinTarget, model.globalMaxTarget);
+      if (selectedAreaInfo) {
+        const aRange = formatRangeTarget(selectedAreaInfo.minTarget, selectedAreaInfo.maxTarget);
+        document.getElementById('dateGridSummaryLabel').textContent =
+          `Equitativo · ${selectedEmp.area}: ${aRange}/fecha · General: ${gRange}/fecha`;
+      } else {
+        document.getElementById('dateGridSummaryLabel').textContent =
+          `${state.options.length} fechas · Equitativo por área y fecha (${gRange}/fecha)`;
+      }
+    } else if (state.mode === 'balanced') {
+      document.getElementById('dateGridSummaryLabel').textContent = `${state.options.length} fechas en la ruleta · Cupos globales`;
+    } else {
+      document.getElementById('dateGridSummaryLabel').textContent = `${state.options.length} fechas en la ruleta · Azar libre (${eqPct} c/u)`;
+    }
 
     grid.innerHTML = state.options.map((opt) => {
-      const pct = formatPct(probs[opt.id] || 0);
+      const probVal = probs[opt.id] || 0;
+      const pct = formatPct(probVal);
       const count = counts[opt.id] || 0;
-      const quotaInfo = state.mode === 'balanced' ? ` / ${state.quotas[opt.id] || 1}` : '';
+      const isAreaMode = state.mode === 'area_balanced';
+      const isFullForArea = isAreaMode && selectedAreaInfo && selectedAreaInfo.pending > 0 && (selectedAreaInfo.weightsById[opt.id] || 0) <= 1e-9;
+      const isFullGlobal = (state.mode === 'balanced' && count >= (state.quotas[opt.id] || 1)) ||
+        (isAreaMode && count >= (model.globalMaxCapById[opt.id] || model.globalMaxTarget));
+
+      let areaRowHtml = '';
+      if (isAreaMode && selectedAreaInfo) {
+        const aCount = selectedAreaInfo.countsById[opt.id] || 0;
+        const aMinCap = selectedAreaInfo.minCapById[opt.id];
+        const aMaxCap = selectedAreaInfo.maxCapById[opt.id];
+        const aCapLabel = aCount >= aMaxCap
+          ? String(aMaxCap)
+          : formatRangeTarget(Math.min(aMinCap, aMaxCap), aMaxCap);
+        areaRowHtml = `
+          <div class="date-area-row">
+            <span class="truncate" title="${xmlEscape(selectedEmp.area)}">${xmlEscape(selectedEmp.area)}</span>
+            <strong class="tabular">${aCount} / ${aCapLabel}</strong>
+          </div>`;
+      }
+
+      const globalCap = isAreaMode
+        ? ` / ${model.globalMaxCapById[opt.id] || model.globalMaxTarget}`
+        : (state.mode === 'balanced' ? ` / ${state.quotas[opt.id] || 1}` : '');
+
+      const topBadge = isFullForArea
+        ? `<span class="full-pill" title="Cupo completo para ${xmlEscape(selectedEmp.area)} en esta fecha">Cupo lleno</span>`
+        : `<span class="date-pct tabular">${pct}</span>`;
+
       return `
-        <div class="date-stat-card">
+        <div class="date-stat-card ${isFullForArea || isFullGlobal ? 'full' : ''}">
           <div class="date-stat-top">
             <span class="date-dot" style="background:${opt.colorMain};"></span>
-            <span class="date-pct tabular">${pct}</span>
+            ${topBadge}
           </div>
           <div>
             <p class="date-label">${xmlEscape(opt.shortLabel)}</p>
             <p class="date-sub">${xmlEscape(opt.seasonTag)}</p>
           </div>
+          ${areaRowHtml}
           <div class="date-footer">
-            <span style="color:var(--text-muted);">Asignados</span>
-            <strong class="tabular">${count}${quotaInfo}</strong>
+            <span style="color:var(--text-muted);">${isAreaMode && selectedAreaInfo ? 'General' : 'Asignados'}</span>
+            <strong class="tabular">${count}${globalCap}</strong>
           </div>
         </div>`;
     }).join('');
@@ -2264,7 +2726,7 @@
     // ---- Tab 2: Dynamic Summary by Area ----
     const sumHead = document.getElementById('summaryThead');
     sumHead.innerHTML = `<tr>
-      <th>Área</th>
+      <th>Área (meta equitativa)</th>
       ${state.options.map(o => `<th class="center">${xmlEscape(o.shortLabel)}</th>`).join('')}
       <th class="center">Pendientes</th>
       <th class="center">Total</th>
@@ -2272,30 +2734,42 @@
 
     const sumBody = document.getElementById('summaryTbody');
     const areas = getUniqueAreas();
+    const k = Math.max(1, state.options.length);
     const totals = Array(state.options.length + 2).fill(0);
     const areaHtml = areas.map(area => {
       const aEmps = state.employees.filter(e => e.area === area);
       const c = state.options.map(o => aEmps.filter(e => state.assignments[e.id]?.optionId === o.id).length);
       const pend = aEmps.filter(e => !state.assignments[e.id]).length;
       const tot = aEmps.length;
+      const minT = Math.floor(tot / k);
+      const maxT = Math.ceil(tot / k);
       c.forEach((v, i) => totals[i] += v);
       totals[state.options.length] += pend;
       totals[state.options.length + 1] += tot;
       return `
         <tr>
-          <td style="font-weight:600;">${xmlEscape(area)}</td>
-          ${c.map(v => `<td class="center tabular">${v}</td>`).join('')}
+          <td style="font-weight:600;">
+            ${xmlEscape(area)}
+            <span class="area-meta-sub">Meta: ${formatRangeTarget(minT, maxT)} / fecha</span>
+          </td>
+          ${c.map(v => `<td class="center tabular ${v > maxT ? 'cell-over-cap' : ''}"${v > maxT ? ` title="Supera la meta equitativa de ${maxT} por fecha"` : ''}>${v}</td>`).join('')}
           <td class="center tabular" style="color:var(--text-muted);">${pend}</td>
           <td class="center tabular" style="font-weight:700;">${tot}</td>
         </tr>`;
     }).join('');
 
+    const totalEmps = totals[state.options.length + 1];
+    const gMinT = Math.floor(totalEmps / k);
+    const gMaxT = Math.ceil(totalEmps / k);
     sumBody.innerHTML = areaHtml + `
       <tr class="total-row">
-        <td>TOTAL QUIRAMA</td>
-        ${totals.slice(0, state.options.length).map(v => `<td class="center tabular">${v}</td>`).join('')}
+        <td>
+          TOTAL QUIRAMA
+          <span class="area-meta-sub">Meta: ${formatRangeTarget(gMinT, gMaxT)} / fecha</span>
+        </td>
+        ${totals.slice(0, state.options.length).map(v => `<td class="center tabular ${v > gMaxT ? 'cell-over-cap' : ''}">${v}</td>`).join('')}
         <td class="center tabular" style="color:var(--text-muted);">${totals[state.options.length]}</td>
-        <td class="center tabular">${totals[state.options.length + 1]}</td>
+        <td class="center tabular">${totalEmps}</td>
       </tr>`;
 
     // ---- Tab 3: Chronological History ----
@@ -2307,9 +2781,12 @@
         const opt = item.optionId !== null ? getOptionById(item.optionId) : null;
         const label = opt ? opt.label : (item.optionLabel || '—');
         const isMan = Boolean(item.isManual || item.mode === 'manual');
+        const modeText = item.mode === 'area_balanced'
+          ? 'Equitativo por área'
+          : (item.mode === 'balanced' ? 'Cupos globales' : 'Azar libre');
         const modeBadge = isMan
           ? `<span class="manual-badge">⚠️ Manual (sin ruleta)${item.manualReason ? ' · ' + xmlEscape(item.manualReason) : ''}</span>`
-          : `<span style="color:var(--text-muted);">${item.mode === 'balanced' ? 'Cupos' : 'Ruleta equitativa'}</span>`;
+          : `<span style="color:var(--text-muted);">${modeText}</span>`;
         return `
           <tr>
             <td class="center tabular" style="font-weight:700;color:var(--text-muted);">#${item.order}</td>
@@ -2426,8 +2903,22 @@
 
   function syncSettingsModal() {
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
-    document.getElementById('settingsEqualTitle').textContent = `Probabilidad idéntica en cada giro — ${eqPct} por fecha (Recomendado)`;
-    document.getElementById('settingsEqualDesc').textContent = `Cada persona tiene exactamente un ${eqPct} de probabilidad para cada una de las ${state.options.length} fechas activas sin importar el orden en que pase.`;
+    const model = computeEquityModel();
+    const gRange = formatRangeTarget(model.globalMinTarget, model.globalMaxTarget);
+
+    const areaPreview = document.getElementById('equityTargetsPreview');
+    if (areaPreview) {
+      const areasSorted = Object.values(model.byArea).sort((a, b) => b.total - a.total);
+      const chips = [
+        `<span class="equity-chip highlight"><strong>Total (${model.totalEmps}):</strong> ${gRange} / fecha</span>`
+      ].concat(areasSorted.map((a, idx) =>
+        `<span class="equity-chip ${idx === 0 ? 'highlight' : ''}"><strong>${xmlEscape(a.area)} (${a.total}):</strong> ${formatRangeTarget(a.minTarget, a.maxTarget)} / fecha</span>`
+      ));
+      areaPreview.innerHTML = chips.join('');
+    }
+
+    document.getElementById('settingsEqualTitle').textContent = `Azar libre sin cupos (${eqPct} independiente en cada giro)`;
+    document.getElementById('settingsEqualDesc').textContent = `Cada persona gira con ${eqPct} fijo sin límites por fecha ni por área (el azar puede dejar fechas más cargadas que otras).`;
 
     document.querySelectorAll('input[name="probMode"]').forEach(r => {
       r.checked = r.value === state.mode;
@@ -2848,7 +3339,10 @@
 
   document.getElementById('btnSaveSettings').addEventListener('click', async () => {
     const checked = document.querySelector('input[name="probMode"]:checked');
-    state.mode = checked ? checked.value : 'equal';
+    state.mode = checked && ['area_balanced', 'balanced', 'equal'].includes(checked.value)
+      ? checked.value
+      : 'area_balanced';
+    state.equityVersion = EQUITY_SCHEMA_VERSION;
     const nextQuotas = {};
     document.querySelectorAll('.quota-input').forEach(inp => {
       nextQuotas[inp.dataset.optId] = Math.max(1, parseInt(inp.value, 10) || 1);
@@ -2859,7 +3353,12 @@
     if (syncUrl) await postToDrive({ action: 'updateSettings', mode: state.mode, quotas: state.quotas });
     renderAll();
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
-    showToast(state.mode === 'equal' ? `Modo activo: Probabilidad igual (${eqPct} c/u)` : 'Modo activo: Cupos equilibrados', '✓');
+    const msg = state.mode === 'area_balanced'
+      ? 'Modo activo: Equitativo estricto por área y fecha'
+      : (state.mode === 'balanced'
+          ? 'Modo activo: Cupos globales personalizados'
+          : `Modo activo: Azar libre (${eqPct} c/u)`);
+    showToast(msg, '✓');
   });
 
   // Backup export / import
@@ -2887,9 +3386,14 @@
         const opts = Array.isArray(parsed.options) && parsed.options.length >= 2
           ? parsed.options.map((o, i) => normalizeOption(o, i))
           : state.options;
+        const resolvedMode = ['area_balanced', 'balanced', 'equal'].includes(parsed.mode)
+          ? parsed.mode
+          : 'area_balanced';
         state = {
           ...defaultState(),
           ...parsed,
+          mode: resolvedMode,
+          equityVersion: EQUITY_SCHEMA_VERSION,
           options: opts,
           quotas: normalizeQuotas(parsed.quotas, opts, parsed.employees.length)
         };

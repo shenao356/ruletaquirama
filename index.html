@@ -30,7 +30,7 @@
         <div style="min-width:0;">
           <h1 class="brand-title truncate">Ruleta de Descansos · Fin de Año 2026</h1>
           <p class="brand-subtitle truncate">
-            Quirama · <span id="headerTotalPeople">44</span> colaboradores · 1 giro por persona · <span id="headerModeLabel">Probabilidad igual (25% por fecha)</span>
+            Quirama · <span id="headerTotalPeople">44</span> colaboradores · 1 giro por persona · <span id="headerModeLabel">Equitativo por área y fecha (11/fecha)</span>
           </p>
         </div>
       </div>
@@ -150,7 +150,7 @@
               <span id="activeSpinLimitChip" class="limit-chip">1 giro por persona</span>
             </div>
             <p id="activePersonName" class="active-name truncate">Selecciona una persona de la lista para comenzar</p>
-            <p id="activePersonMeta" class="active-meta">1 único giro por persona · Todas las fechas tienen exactamente la misma probabilidad.</p>
+            <p id="activePersonMeta" class="active-meta">1 único giro por persona · Reparto equitativo garantizado por área y fecha.</p>
           </div>
           <div id="activeAlreadyAssignedActions" class="hidden">
             <span id="activeExistingDateBadge" class="pill"></span>
@@ -161,7 +161,7 @@
           <canvas id="wheelCanvas" width="420" height="420" style="width:380px;height:380px;"></canvas>
           <button id="btnHubSpin" type="button" class="wheel-hub-btn" aria-label="Girar ruleta">
             <span id="hubTitle" class="hub-title">GIRAR</span>
-            <span id="hubSubtext" class="hub-sub">25%</span>
+            <span id="hubSubtext" class="hub-sub">Equit.</span>
           </button>
         </div>
 
@@ -203,7 +203,7 @@
 
         <!-- Date Probability & Live Count Cards -->
         <div class="date-grid-header">
-          <span id="dateGridSummaryLabel">4 fechas en la ruleta · 25% cada una</span>
+          <span id="dateGridSummaryLabel">4 fechas · Equitativo por área y fecha (11/fecha)</span>
           <button id="btnManageDatesInline" type="button" class="link-btn">Editar / agregar fechas</button>
         </div>
         <div id="dateCardsGrid" class="date-grid"></div>
@@ -406,13 +406,14 @@
       </div>
 
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <label class="radio-option">
-          <input type="radio" name="probMode" value="equal" style="margin-top:3px;" />
-          <div>
-            <strong id="settingsEqualTitle">Probabilidad idéntica en cada giro (Recomendado)</strong>
-            <p id="settingsEqualDesc" style="margin:4px 0 0;color:var(--text-muted);font-size:12px;">
-              Cada persona tiene exactamente la misma probabilidad para cada fecha activa sin importar el orden en que pase.
+        <label class="radio-option radio-option-recommended">
+          <input type="radio" name="probMode" value="area_balanced" style="margin-top:3px;" checked />
+          <div style="width:100%;">
+            <strong>Equitativo estricto por área y fecha (Recomendado)</strong>
+            <p style="margin:4px 0 0;color:var(--text-muted);font-size:12px;">
+              Garantiza que ninguna fecha quede sobrecargada y reparte de forma equitativa cada área (especialmente <strong>A&amp;B</strong>) en todas las fechas. Diferencia máxima de 1 persona por fecha tanto en cada área como en el total general.
             </p>
+            <div id="equityTargetsPreview" class="equity-preview-grid"></div>
           </div>
         </label>
 
@@ -420,13 +421,23 @@
           <input type="radio" name="probMode" value="balanced" style="margin-top:3px;" />
           <div style="width:100%;">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-              <strong>Cupos equilibrados (urna justa sin reposición)</strong>
+              <strong>Cupos globales personalizados</strong>
               <button id="btnAutoDistributeQuotas" type="button" class="link-btn">Repartir equitativamente</button>
             </div>
             <p id="settingsBalancedDesc" style="margin:4px 0 0;color:var(--text-muted);font-size:12px;">
-              Define cuántos cupos máximos tiene cada fecha. Cuando una fecha llena su cupo se retira automáticamente de la ruleta.
+              Define cuántos cupos totales tiene cada fecha (sin separar por área). Cuando una fecha llena su cupo global se retira de la ruleta.
             </p>
             <div id="quotaInputsWrap" class="quota-grid hidden"></div>
+          </div>
+        </label>
+
+        <label class="radio-option">
+          <input type="radio" name="probMode" value="equal" style="margin-top:3px;" />
+          <div>
+            <strong id="settingsEqualTitle">Azar libre sin cupos (25% independiente en cada giro)</strong>
+            <p id="settingsEqualDesc" style="margin:4px 0 0;color:var(--text-muted);font-size:12px;">
+              Cada persona gira con probabilidad fija sin límites por fecha ni por área (el azar puede dejar fechas más cargadas que otras).
+            </p>
           </div>
         </label>
 

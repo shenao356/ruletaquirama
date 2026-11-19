@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * RULETA DE DESCANSOS FIN DE AÑO 2026 — QUIRAMA (v2 — Fechas Dinámicas)
+ * RULETA DE DESCANSOS FIN DE AÑO 2026 — QUIRAMA (v3 — Equitativo por Área y Fecha)
  * Backend de sincronización en vivo para Google Sheets / Google Drive
  * ============================================================================
  *
@@ -83,7 +83,14 @@ function getOptions_() {
 
 function getSettings_(options) {
   const props = PropertiesService.getDocumentProperties();
-  const mode = props.getProperty('RULETA_MODE') || 'equal';
+  const storedMode = props.getProperty('RULETA_MODE');
+  const migratedV3 = props.getProperty('RULETA_EQUITY_V3') === '1';
+  let mode = 'area_balanced';
+  if (migratedV3 && (storedMode === 'area_balanced' || storedMode === 'balanced' || storedMode === 'equal')) {
+    mode = storedMode;
+  } else if (storedMode === 'balanced') {
+    mode = 'balanced';
+  }
   let quotas = {};
   const defaultPerOpt = Math.ceil(44 / Math.max(1, options.length));
   options.forEach(function (o) { quotas[o.id] = defaultPerOpt; });
@@ -106,6 +113,269 @@ function getSettings_(options) {
 
   const version = Number(props.getProperty('RULETA_VERSION') || '1');
   return { mode: mode, quotas: quotas, version: version };
+}
+
+function waterFill_(counts, pending) {
+  const k = counts.length;
+  if (k === 0) {
+    return { level: 0, baseNeed: [], extrasLeft: 0, eligibleForExtra: [], minAfterBase: [] };
+  }
+  if (pending <= 0) {
+    return {
+      level: Math.min.apply(null, counts),
+      baseNeed: counts.map(function () { return 0; }),
+      extrasLeft: 0,
+      eligibleForExtra: counts.map(function () { return false; }),
+      minAfterBase: counts.slice()
+    };
+  }
+  let L = Math.min.apply(null, counts);
+  while (true) {
+    const nextL = L + 1;
+    let needed = 0;
+    for (let j = 0; j < k; j++) {
+      if (counts[j] < nextL) needed += (nextL - counts[j]);
+    }
+    if (needed <= pending) {
+      L = nextL;
+    } else {
+      break;
+    }
+  }
+  const baseNeed = [];
+  let baseSum = 0;
+  const minAfterBase = [];
+  const eligibleForExtra = [];
+  for (let j = 0; j < k; j++) {
+    const need = counts[j] < L ? (L - counts[j]) : 0;
+    baseNeed.push(need);
+    baseSum += need;
+    minAfterBase.push(counts[j] + need);
+    eligibleForExtra.push(counts[j] <= L);
+  }
+  return {
+    level: L,
+    baseNeed: baseNeed,
+    extrasLeft: pending - baseSum,
+    eligibleForExtra: eligibleForExtra,
+    minAfterBase: minAfterBase
+  };
+}
+
+function minCostBalance_(activeAreas, minFinal, numOptions) {
+  let baseSqSum = 0;
+  for (let j = 0; j < numOptions; j++) {
+    baseSqSum += minFinal[j] * minFinal[j];
+  }
+  let totalExtras = 0;
+  for (let i = 0; i < activeAreas.length; i++) {
+    totalExtras += activeAreas[i].extrasLeft;
+  }
+  if (totalExtras <= 0) return baseSqSum;
+
+  const M = activeAreas.length;
+  const S = 0;
+  const dateOffset = 1 + M;
+  const T = dateOffset + numOptions;
+  const N = T + 1;
+  const adj = [];
+  for (let n = 0; n < N; n++) adj.push([]);
+
+  function addEdge(u, v, cap, cost) {
+    const fwd = { to: v, rev: adj[v].length, cap: cap, cost: cost };
+    const bwd = { to: u, rev: adj[u].length, cap: 0, cost: -cost };
+    adj[u].push(fwd);
+    adj[v].push(bwd);
+  }
+
+  const dateDeg = [];
+  for (let j = 0; j < numOptions; j++) dateDeg.push(0);
+
+  for (let i = 0; i < M; i++) {
+    const a = activeAreas[i];
+    if (a.extrasLeft <= 0) continue;
+    addEdge(S, 1 + i, a.extrasLeft, 0);
+    for (let j = 0; j < numOptions; j++) {
+      if (a.eligibleForExtra[j]) {
+        addEdge(1 + i, dateOffset + j, 1, 0);
+        dateDeg[j]++;
+      }
+    }
+  }
+
+  for (let j = 0; j < numOptions; j++) {
+    for (let r = 1; r <= dateDeg[j]; r++) {
+      const nextVal = minFinal[j] + r;
+      addEdge(dateOffset + j, T, 1, 2 * nextVal - 1);
+    }
+  }
+
+  let addedCost = 0;
+  const INF = 1e12;
+  for (let step = 0; step < totalExtras; step++) {
+    const dist = [];
+    const prevNode = [];
+    const prevEdge = [];
+    const inQueue = [];
+    for (let n = 0; n < N; n++) {
+      dist.push(INF);
+      prevNode.push(-1);
+      prevEdge.push(-1);
+      inQueue.push(false);
+    }
+    const queue = [S];
+    dist[S] = 0;
+    inQueue[S] = true;
+
+    for (let qHead = 0; qHead < queue.length; qHead++) {
+      const u = queue[qHead];
+      inQueue[u] = false;
+      const edges = adj[u];
+      for (let ei = 0; ei < edges.length; ei++) {
+        const e = edges[ei];
+        if (e.cap > 0 && dist[u] + e.cost < dist[e.to]) {
+          dist[e.to] = dist[u] + e.cost;
+          prevNode[e.to] = u;
+          prevEdge[e.to] = ei;
+          if (!inQueue[e.to]) {
+            inQueue[e.to] = true;
+            queue.push(e.to);
+          }
+        }
+      }
+    }
+
+    if (dist[T] >= INF) break;
+    addedCost += dist[T];
+    let cur = T;
+    while (cur !== S) {
+      const p = prevNode[cur];
+      const ei = prevEdge[cur];
+      const e = adj[p][ei];
+      e.cap -= 1;
+      adj[cur][e.rev].cap += 1;
+      cur = p;
+    }
+  }
+
+  return baseSqSum + addedCost;
+}
+
+function computeEquityModel_(options, employees, assignments) {
+  const k = options.length;
+  const optIndexById = {};
+  for (let idx = 0; idx < k; idx++) {
+    optIndexById[String(options[idx].id)] = idx;
+  }
+
+  const areaList = [];
+  const areaMap = {};
+  for (let i = 0; i < employees.length; i++) {
+    const emp = employees[i];
+    const area = emp.area || 'General';
+    if (!areaMap[area]) {
+      const zeros = [];
+      for (let j = 0; j < k; j++) zeros.push(0);
+      areaMap[area] = { area: area, total: 0, pending: 0, counts: zeros };
+      areaList.push(areaMap[area]);
+    }
+    const entry = areaMap[area];
+    entry.total++;
+    const rec = assignments[emp.id];
+    const optIdx = rec && optIndexById[String(rec.optionId)] !== undefined ? optIndexById[String(rec.optionId)] : -1;
+    if (optIdx >= 0) {
+      entry.counts[optIdx]++;
+    } else {
+      entry.pending++;
+    }
+  }
+
+  const minFinal = [];
+  for (let j = 0; j < k; j++) minFinal.push(0);
+
+  const areaStates = areaList.map(function (entry) {
+    const wf = waterFill_(entry.counts, entry.pending);
+    for (let j = 0; j < k; j++) minFinal[j] += wf.minAfterBase[j];
+    return { area: entry.area, total: entry.total, pending: entry.pending, counts: entry.counts, wf: wf };
+  });
+
+  const activeExtraAreas = [];
+  for (let i = 0; i < areaStates.length; i++) {
+    if (areaStates[i].wf.extrasLeft > 0) {
+      activeExtraAreas.push({
+        area: areaStates[i].area,
+        extrasLeft: areaStates[i].wf.extrasLeft,
+        eligibleForExtra: areaStates[i].wf.eligibleForExtra.slice()
+      });
+    }
+  }
+
+  const optCost = minCostBalance_(activeExtraAreas, minFinal, k);
+  const byArea = {};
+
+  for (let i = 0; i < areaStates.length; i++) {
+    const a = areaStates[i];
+    const feasibleExtras = [];
+    const feasibleMap = [];
+    for (let j = 0; j < k; j++) feasibleMap.push(false);
+
+    if (a.wf.extrasLeft > 0) {
+      let activeIdx = -1;
+      for (let x = 0; x < activeExtraAreas.length; x++) {
+        if (activeExtraAreas[x].area === a.area) { activeIdx = x; break; }
+      }
+      for (let j = 0; j < k; j++) {
+        if (!a.wf.eligibleForExtra[j]) continue;
+        const nextMinFinal = minFinal.slice();
+        nextMinFinal[j] += 1;
+        const nextActive = [];
+        for (let x = 0; x < activeExtraAreas.length; x++) {
+          const item = activeExtraAreas[x];
+          if (x !== activeIdx) {
+            nextActive.push(item);
+          } else if (item.extrasLeft - 1 > 0) {
+            const nextElig = item.eligibleForExtra.slice();
+            nextElig[j] = false;
+            nextActive.push({
+              area: item.area,
+              extrasLeft: item.extrasLeft - 1,
+              eligibleForExtra: nextElig
+            });
+          }
+        }
+        const candCost = minCostBalance_(nextActive, nextMinFinal, k);
+        if (candCost === optCost) {
+          feasibleExtras.push(j);
+          feasibleMap[j] = true;
+        }
+      }
+      if (feasibleExtras.length === 0) {
+        for (let j = 0; j < k; j++) {
+          if (a.wf.eligibleForExtra[j]) {
+            feasibleExtras.push(j);
+            feasibleMap[j] = true;
+          }
+        }
+      }
+    }
+
+    const weightsById = {};
+    for (let j = 0; j < k; j++) {
+      const optId = String(options[j].id);
+      const extraShare = feasibleMap[j] && feasibleExtras.length > 0
+        ? (a.wf.extrasLeft / feasibleExtras.length)
+        : 0;
+      weightsById[optId] = a.wf.baseNeed[j] + extraShare;
+    }
+
+    byArea[a.area] = {
+      area: a.area,
+      pending: a.pending,
+      weightsById: weightsById
+    };
+  }
+
+  return { byArea: byArea };
 }
 
 function bumpVersion_() {
@@ -244,9 +514,15 @@ function rebuildSummarySheet_(ss, options) {
 
 function updateBanner_(mainSheet, totalEmps, assignedCount, settings, options) {
   const pct = options.length > 0 ? Math.round((100 / options.length) * 10) / 10 : 25;
-  const modeDesc = settings.mode === 'equal'
-    ? 'Probabilidad igual (' + pct + '% cada fecha)'
-    : 'Cupos equilibrados (' + options.map(function (o) { return settings.quotas[o.id] || 0; }).join(' / ') + ')';
+  const k = Math.max(1, options.length);
+  const gMin = Math.floor(totalEmps / k);
+  const gMax = Math.ceil(totalEmps / k);
+  const gRange = gMin === gMax ? String(gMin) : (gMin + '–' + gMax);
+  const modeDesc = settings.mode === 'area_balanced'
+    ? 'Equitativo estricto por área y fecha (' + gRange + '/fecha)'
+    : (settings.mode === 'balanced'
+        ? 'Cupos globales (' + options.map(function (o) { return settings.quotas[o.id] || 0; }).join(' / ') + ')'
+        : 'Azar libre (' + pct + '% cada fecha)');
   const text = 'Actualizado: ' + formatNowBogota_() +
     '  |  Sorteados: ' + assignedCount + ' de ' + totalEmps +
     '  |  Modo: ' + modeDesc;
@@ -260,6 +536,7 @@ function readFullState_(ss) {
   }
 
   const options = getOptions_();
+  const settings = getSettings_(options);
   const lastRow = mainSheet.getLastRow();
   const employees = [];
   const assignments = {};
@@ -290,7 +567,7 @@ function readFullState_(ss) {
         assignments[id] = {
           optionId: opt.id,
           timestamp: ts || '',
-          mode: isManual ? 'manual' : 'equal',
+          mode: isManual ? 'manual' : settings.mode,
           isManual: isManual,
           manualReason: manualReason
         };
@@ -309,7 +586,13 @@ function readFullState_(ss) {
       if (!hName || !label) continue;
       const opt = findOptionByLabel_(options, label);
       const modeCell = String(r[5] || '');
-      const hManual = modeCell.toLowerCase().indexOf('manual') >= 0;
+      const modeLower = modeCell.toLowerCase();
+      const hManual = modeLower.indexOf('manual') >= 0;
+      const parsedMode = hManual
+        ? 'manual'
+        : (modeLower.indexOf('área') >= 0 || modeLower.indexOf('area') >= 0
+            ? 'area_balanced'
+            : (modeLower.indexOf('cupo') >= 0 ? 'balanced' : 'equal'));
       history.push({
         order: Number(r[0]) || (i + 1),
         timestamp: String(r[1] || '').trim(),
@@ -317,17 +600,16 @@ function readFullState_(ss) {
         area: String(r[3] || '').trim(),
         optionId: opt ? opt.id : null,
         optionLabel: label,
-        mode: hManual ? 'manual' : (modeCell.indexOf('Cupos') >= 0 ? 'balanced' : 'equal'),
+        mode: parsedMode,
         isManual: hManual,
         modeText: modeCell
       });
     }
   }
 
-  const settings = getSettings_(options);
   return {
     ok: true,
-    scriptVersion: 2,
+    scriptVersion: 3,
     serverTime: new Date().toISOString(),
     version: settings.version,
     options: options,
@@ -481,6 +763,45 @@ function doPost(e) {
         });
       }
 
+      const settingsNow = getSettings_(options);
+      const effectiveMode = isManual ? 'manual' : (body.mode || settingsNow.mode || 'area_balanced');
+      if (!isManual && (effectiveMode === 'area_balanced' || effectiveMode === 'balanced')) {
+        const curState = readFullState_(ss);
+        if (effectiveMode === 'area_balanced') {
+          const eqModel = computeEquityModel_(options, curState.employees, curState.assignments);
+          const areaObj = eqModel.byArea[empArea];
+          if (areaObj && areaObj.pending > 0 && (areaObj.weightsById[String(opt.id)] || 0) <= 1e-9) {
+            return jsonResponse_({
+              ok: false,
+              quotaConflict: true,
+              error: 'Esa fecha acaba de llenar su cupo equitativo para ' + empArea + ' en otro dispositivo. Gira nuevamente con las fechas disponibles.',
+              state: curState
+            });
+          }
+        } else if (effectiveMode === 'balanced') {
+          const counts = {};
+          options.forEach(function (o) { counts[o.id] = 0; });
+          Object.keys(curState.assignments).forEach(function (kId) {
+            const r = curState.assignments[kId];
+            if (r && counts[String(r.optionId)] !== undefined) counts[String(r.optionId)]++;
+          });
+          let totalRem = 0;
+          options.forEach(function (o) {
+            const q = Math.max(1, Number(settingsNow.quotas[o.id]) || 1);
+            totalRem += Math.max(0, q - (counts[o.id] || 0));
+          });
+          const optQuota = Math.max(1, Number(settingsNow.quotas[opt.id]) || 1);
+          if (totalRem > 0 && (counts[opt.id] || 0) >= optQuota) {
+            return jsonResponse_({
+              ok: false,
+              quotaConflict: true,
+              error: 'Esa fecha acaba de completar su cupo en otro dispositivo. Gira nuevamente con las fechas disponibles.',
+              state: curState
+            });
+          }
+        }
+      }
+
       const tsFormatted = formatNowBogota_();
       const manualReason = String(body.manualReason || '').trim();
       applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, isManual, manualReason);
@@ -489,7 +810,9 @@ function doPost(e) {
       const pct = Math.round((100 / Math.max(1, options.length)) * 10) / 10;
       const modeLabel = isManual
         ? (manualReason ? 'Manual (sin ruleta) — ' + manualReason : 'Manual (sin ruleta)')
-        : (body.mode === 'balanced' ? 'Cupos equilibrados' : 'Probabilidad igual (' + pct + '%)');
+        : (effectiveMode === 'area_balanced'
+            ? 'Equitativo por área y fecha'
+            : (effectiveMode === 'balanced' ? 'Cupos globales' : 'Azar libre (' + pct + '%)'));
       const newHistRow = histSheet.getLastRow() + 1;
       histSheet.getRange(newHistRow, 1, 1, 6).setValues([[
         nextOrder, tsFormatted, empName, empArea, opt.label, modeLabel
@@ -630,8 +953,11 @@ function doPost(e) {
 
     if (action === 'updateSettings') {
       const props = PropertiesService.getDocumentProperties();
-      const mode = body.mode === 'balanced' ? 'balanced' : 'equal';
+      const mode = (body.mode === 'area_balanced' || body.mode === 'balanced' || body.mode === 'equal')
+        ? body.mode
+        : 'area_balanced';
       props.setProperty('RULETA_MODE', mode);
+      props.setProperty('RULETA_EQUITY_V3', '1');
       if (body.quotas && typeof body.quotas === 'object') {
         props.setProperty('RULETA_QUOTAS', JSON.stringify(body.quotas));
       }
