@@ -1530,6 +1530,134 @@ table.data-table {
   color: var(--warning-text);
 }
 
+/* Company Logo */
+.brand-logo-trigger {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  border-radius: 12px;
+  transition: transform 0.14s ease, opacity 0.14s ease;
+}
+
+.brand-logo-trigger:hover {
+  transform: scale(1.03);
+  opacity: 0.92;
+}
+
+.brand-logo-wrap {
+  height: 44px;
+  max-width: 150px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: transparent;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.brand-logo-wrap.light-bg {
+  background: #ffffff;
+  border-color: rgba(16, 24, 20, 0.12);
+}
+
+.brand-logo-img {
+  max-height: 36px;
+  max-width: 130px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.logo-preview-box {
+  min-height: 92px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1.5px dashed var(--border);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.logo-preview-box.light-bg {
+  background: #ffffff;
+}
+
+.logo-preview-img {
+  max-height: 76px;
+  max-width: 240px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* Discreet Admin Tools inside Settings */
+.admin-details {
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border);
+  background: transparent;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+
+.admin-details-summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 12px;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-details-summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-details-summary::after {
+  content: '▸';
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.admin-details[open] .admin-details-summary::after {
+  transform: rotate(90deg);
+}
+
+.admin-details-body {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-manual-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.admin-manual-row .select {
+  flex: 1;
+  min-width: 180px;
+}
+
 .footer-note {
   text-align: center;
   font-size: 12px;
@@ -1542,4 +1670,6 @@ table.data-table {
   .stage-card { padding: 14px; }
   .header-inner { padding: 10px 12px; }
   .container { padding: 14px 12px 32px; }
+  .brand-logo-wrap { max-width: 112px; height: 38px; padding: 3px 7px; }
+  .brand-logo-img { max-height: 30px; max-width: 98px; }
 }

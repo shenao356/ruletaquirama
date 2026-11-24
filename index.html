@@ -26,11 +26,16 @@
   <header class="site-header">
     <div class="header-inner">
       <div class="brand-group">
-        <div class="brand-badge" aria-hidden="true">Q26</div>
+        <button id="brandLogoTrigger" type="button" class="brand-logo-trigger" title="Agregar o cambiar el logo de la empresa" aria-label="Configurar logo de la empresa">
+          <div id="brandBadgeFallback" class="brand-badge" aria-hidden="true">Q26</div>
+          <div id="brandLogoWrap" class="brand-logo-wrap hidden">
+            <img id="brandLogoImg" class="brand-logo-img" alt="Logo de la empresa" />
+          </div>
+        </button>
         <div style="min-width:0;">
           <h1 class="brand-title truncate">Ruleta de Descansos · Fin de Año 2026</h1>
           <p class="brand-subtitle truncate">
-            Quirama · <span id="headerTotalPeople">44</span> colaboradores · Hasta 2 tiros/persona · <span id="headerModeLabel">Equitativo por área (A&amp;B máx. 4/fecha)</span>
+            Quirama · <span id="headerTotalPeople">44</span> colaboradores · Hasta 2 tiros/persona · <span id="headerModeLabel">Equitativo por área (Bar y Producción máx. 2/fecha)</span>
           </p>
         </div>
       </div>
@@ -51,6 +56,12 @@
           </div>
         </div>
 
+        <!-- Company Logo -->
+        <button id="btnCompanyLogo" type="button" class="btn" title="Agregar o cambiar el logo de la empresa" aria-label="Logo de la empresa">
+          <span aria-hidden="true">🖼️</span>
+          <span class="hide-xs">Logo</span>
+        </button>
+
         <!-- Theme Toggle -->
         <button id="btnTheme" type="button" class="btn" title="Cambiar tema claro / oscuro" aria-label="Cambiar tema">
           <span id="themeIcon" aria-hidden="true">🌙</span>
@@ -69,7 +80,7 @@
         </button>
 
         <!-- Settings -->
-        <button id="btnSettings" type="button" class="btn" title="Reglas de probabilidad y respaldo">
+        <button id="btnSettings" type="button" class="btn" title="Reglas de probabilidad, respaldo y opciones avanzadas">
           <span aria-hidden="true">⚙</span>
           <span class="hide-xs">Reglas</span>
         </button>
@@ -78,7 +89,7 @@
         <button id="btnDownloadXlsxHeader" type="button" class="btn btn-primary">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg>
           <span>Excel</span>
-          <span id="headerAssignedBadge" class="badge-count tabular">0</span>
+          <span id="headerAssignedBadge" class="badge-count tabular">13</span>
         </button>
       </div>
     </div>
@@ -150,7 +161,7 @@
               <span id="activeSpinLimitChip" class="limit-chip">Hasta 2 tiros</span>
             </div>
             <p id="activePersonName" class="active-name truncate">Selecciona una persona de la lista para comenzar</p>
-            <p id="activePersonMeta" class="active-meta">Hasta 2 tiros por persona con confirmación · A&amp;B máx. 4/fecha · Reparto equitativo garantizado.</p>
+            <p id="activePersonMeta" class="active-meta">Hasta 2 tiros por persona con confirmación · Bar y Producción máx. 2/fecha · Reparto equitativo garantizado.</p>
           </div>
           <div id="activeAlreadyAssignedActions" class="hidden">
             <span id="activeExistingDateBadge" class="pill"></span>
@@ -173,9 +184,6 @@
             <button id="btnSpinMain" type="button" disabled class="btn btn-primary btn-lg">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
               <span id="btnSpinText">Girar Ruleta</span>
-            </button>
-            <button id="btnManualAssign" type="button" disabled class="btn" title="Asignar fecha manualmente sin girar la ruleta">
-              <span>✎ Asignar manual</span>
             </button>
             <span class="hide-xs" style="font-size:12px;color:var(--text-muted);">o presiona <kbd class="kbd">Espacio</kbd></span>
           </div>
@@ -203,7 +211,7 @@
 
         <!-- Date Probability & Live Count Cards -->
         <div class="date-grid-header">
-          <span id="dateGridSummaryLabel">6 fechas · Equitativo por área (A&amp;B máx. 4/fecha · General 7–8/fecha)</span>
+          <span id="dateGridSummaryLabel">6 fechas · Equitativo por área (Bar y Producción máx. 2/fecha · General 7–8/fecha)</span>
           <button id="btnManageDatesInline" type="button" class="link-btn">Editar / agregar fechas</button>
         </div>
         <div id="dateCardsGrid" class="date-grid"></div>
@@ -386,7 +394,9 @@
             <option value="Administrativa">Administrativa</option>
             <option value="Recepción">Recepción</option>
             <option value="Ama de Llaves">Ama de Llaves</option>
-            <option value="A&B">A&amp;B</option>
+            <option value="Bar">Bar</option>
+            <option value="Producción">Producción</option>
+            <option value="Almacén">Almacén</option>
             <option value="Mantenimiento">Mantenimiento</option>
             <option value="Mantenimiento Zonas Húmedas">Mantenimiento Zonas Húmedas</option>
           </select>
@@ -399,11 +409,55 @@
     </div>
   </div>
 
+  <!-- Modal: Company Logo -->
+  <div id="modalCompanyLogo" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="companyLogoTitle">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h3 id="companyLogoTitle" class="modal-title">Logo de la empresa</h3>
+        <button type="button" data-close-modal="modalCompanyLogo" class="modal-close" aria-label="Cerrar">&times;</button>
+      </div>
+
+      <div id="logoPreviewBox" class="logo-preview-box">
+        <img id="logoPreviewImg" class="logo-preview-img hidden" alt="Vista previa del logo" />
+        <span id="logoPreviewPlaceholder" style="font-size:12.5px;color:var(--text-muted);">
+          Sin logo cargado (se muestra la insignia Q26)
+        </span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <label class="btn btn-primary btn-sm" style="cursor:pointer;">
+            <span>📤 Subir imagen (PNG, JPG, SVG, WebP)</span>
+            <input id="inputLogoFile" type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="hidden" />
+          </label>
+          <button id="btnRemoveLogo" type="button" class="btn btn-sm btn-ghost hidden" style="color:var(--danger);">Quitar logo</button>
+        </div>
+
+        <div>
+          <label for="inputLogoUrl" class="label">O pega el enlace directo de una imagen (opcional)</label>
+          <div style="display:flex;gap:6px;">
+            <input id="inputLogoUrl" class="input" type="url" placeholder="https://ejemplo.com/logo.png" />
+            <button id="btnApplyLogoUrl" type="button" class="btn btn-sm">Cargar</button>
+          </div>
+        </div>
+
+        <label class="checkbox-label" style="font-size:12.5px;">
+          <input id="chkLogoLightBg" type="checkbox" checked />
+          <span>Fondo blanco detrás del logo (recomendado para tema oscuro)</span>
+        </label>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" data-close-modal="modalCompanyLogo" class="btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal: Settings & Backup -->
   <div id="modalSettings" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
     <div class="modal">
       <div class="modal-header">
-        <h3 id="settingsTitle" class="modal-title">Reglas de Probabilidad y Respaldo</h3>
+        <h3 id="settingsTitle" class="modal-title">Reglas de Probabilidad y Ajustes</h3>
         <button type="button" data-close-modal="modalSettings" class="modal-close" aria-label="Cerrar">&times;</button>
       </div>
 
@@ -413,7 +467,7 @@
           <div style="width:100%;">
             <strong>Equitativo estricto por área y fecha (Recomendado)</strong>
             <p style="margin:4px 0 0;color:var(--text-muted);font-size:12px;">
-              Garantiza <strong>máximo 4 personas por fecha en A&amp;B</strong> en las 6 fechas activas de la ruleta (24 cupos + 1 fecha manual exclusiva) y reparto equitativo global y por área en el resto del equipo.
+              Garantiza <strong>máximo 2 personas por fecha en Bar y en Producción</strong> en las 6 fechas activas de la ruleta y reparto equitativo global y por área en el resto del equipo.
             </p>
             <div id="equityTargetsPreview" class="equity-preview-grid"></div>
           </div>
@@ -444,6 +498,14 @@
         </label>
 
         <div class="panel-box">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+            <strong>Logo de la empresa</strong>
+            <button id="btnOpenLogoFromSettings" type="button" class="btn btn-sm">🖼️ Configurar logo</button>
+          </div>
+          <p style="margin:0;color:var(--text-muted);font-size:12px;">Personaliza el encabezado de la ruleta con el logotipo de la empresa.</p>
+        </div>
+
+        <div class="panel-box">
           <strong>Respaldo manual (JSON)</strong>
           <p style="margin:0;color:var(--text-muted);font-size:12px;">Guarda o restaura una copia del avance local en cualquier momento.</p>
           <div style="display:flex;flex-wrap:wrap;gap:8px;padding-top:4px;">
@@ -454,6 +516,23 @@
             </label>
           </div>
         </div>
+
+        <!-- Discreet Admin Manual Assignment (Hidden from main roulette screen) -->
+        <details id="adminManualDetails" class="admin-details">
+          <summary class="admin-details-summary">Opciones avanzadas (administración)</summary>
+          <div class="admin-details-body">
+            <p style="margin:0;color:var(--text-muted);font-size:12px;">
+              Permite asignar o corregir una fecha manualmente sin girar la ruleta. Queda marcada como <em>Manual (sin ruleta)</em> en el registro y en Drive.
+            </p>
+            <div class="admin-manual-row">
+              <select id="adminManualEmpSelect" class="select" aria-label="Seleccionar colaborador para asignación manual"></select>
+              <button id="btnOpenAdminManual" type="button" class="btn btn-sm">✎ Asignar manual</button>
+            </div>
+            <div id="adminClearWrap" class="hidden" style="display:flex;justify-content:flex-end;">
+              <button id="btnAdminClearManual" type="button" class="link-btn danger">Quitar fecha manual de esta persona</button>
+            </div>
+          </div>
+        </details>
       </div>
 
       <div class="modal-footer">
@@ -469,7 +548,7 @@
       <div class="modal-header">
         <div>
           <h3 id="manageDatesTitle" class="modal-title">Modificar o agregar fechas de descanso</h3>
-          <p id="manageDatesProbPreview" class="section-desc">6 fechas activas · Reparto equitativo: 7–8/fecha (A&amp;B: máx. 4/fecha)</p>
+          <p id="manageDatesProbPreview" class="section-desc">6 fechas activas · Reparto equitativo: 7–8/fecha (Bar y Producción: máx. 2/fecha)</p>
         </div>
         <button type="button" data-close-modal="modalManageDates" class="modal-close" aria-label="Cerrar">&times;</button>
       </div>

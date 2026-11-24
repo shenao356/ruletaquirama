@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * RULETA DE DESCANSOS FIN DE AÑO 2026 — QUIRAMA (v4 — 6 Fechas, A&B máx. 4, 2 Tiros)
+ * RULETA DE DESCANSOS FIN DE AÑO 2026 — QUIRAMA (v5 — 6 Fechas, Bar y Producción máx. 2, 2 Tiros)
  * Backend de sincronización en vivo para Google Sheets / Google Drive
  * ============================================================================
  *
@@ -22,7 +22,7 @@ const SHEET_SUMMARY = 'Resumen por Área';
 const SHEET_HISTORY = 'Historial de Giros';
 const TIMEZONE = 'America/Bogota';
 const MAX_SPINS_PER_PERSON = 2;
-const AREA_HARD_CAPS = { 'A&B': 4 };
+const AREA_HARD_CAPS = { 'Bar': 2, 'Producción': 2 };
 
 const COLOR_PALETTE = [
   { bg: '#DCFCE7', fg: '#14532D' }, // 0 Esmeralda
@@ -56,7 +56,7 @@ const EXCLUSIVE_MANUAL_OPTIONS = [
     bg: '#FFEDD5',
     fg: '#7C2D12',
     exclusiveManual: true,
-    exclusiveEmpId: 25
+    exclusiveEmpId: 34
   }
 ];
 
@@ -65,14 +65,14 @@ const PRE_REGISTERED_MANUAL = [
   { empId: 5,  area: 'Administrativa', name: 'DIAZ BOHORQUEZ NINI JOHANA',         optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
   { empId: 2,  area: 'Administrativa', name: 'CASTRO VALENCIA ANDRES DAVID',       optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
   { empId: 1,  area: 'Administrativa', name: 'SALAS HERNANDEZ JHONATAN JAVIER',    optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
-  { empId: 15, area: 'A&B',            name: 'RENDON MEJIA PABLO ANDRES',          optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
+  { empId: 15, area: 'Bar',            name: 'RENDON MEJIA PABLO ANDRES',          optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
   { empId: 41, area: 'Mantenimiento',  name: 'GOMEZ CALDERON ROBIRIO ANTONIO',     optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
   { empId: 12, area: 'Ama de Llaves',  name: 'VILLA GONZALEZ BLANCA ALICIA',       optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
-  { empId: 29, area: 'A&B',            name: 'ALVAREZ SEPULVEDA WILSON ALEXANDER', optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
-  { empId: 28, area: 'A&B',            name: 'MORALES HENAO RAUL SANTIAGO',        optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' },
-  { empId: 20, area: 'A&B',            name: 'RIOS GARCIA CAROLINA',               optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
-  { empId: 25, area: 'A&B',            name: 'GARCIA CARMONA SANTIAGO',            optionId: 'manual_26_27_dic', label: '26 y 27 de diciembre',          reason: 'Pre-registrado (fecha exclusiva)', exclusiveManual: true },
-  { empId: 17, area: 'A&B',            name: 'MARIN VELASQUEZ JUAN PABLO',         optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
+  { empId: 39, area: 'Almacén',        name: 'ALVAREZ SEPULVEDA WILSON ALEXANDER', optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+  { empId: 38, area: 'Almacén',        name: 'MORALES HENAO RAUL SANTIAGO',        optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' },
+  { empId: 29, area: 'Producción',     name: 'RIOS GARCIA CAROLINA',               optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
+  { empId: 34, area: 'Producción',     name: 'GARCIA CARMONA SANTIAGO',            optionId: 'manual_26_27_dic', label: '26 y 27 de diciembre',          reason: 'Pre-registrado (fecha exclusiva)', exclusiveManual: true },
+  { empId: 26, area: 'Producción',     name: 'MARIN VELASQUEZ JUAN PABLO',         optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
   { empId: 3,  area: 'Administrativa', name: 'LOPEZ BEDOYA ANA MARIA',             optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' }
 ];
 
@@ -589,7 +589,7 @@ function rebuildSummarySheet_(ss, options) {
   sumSheet.setRowHeight(1, 28);
 
   const subText = exclusiveLabels.length > 0
-    ? 'Fórmulas vinculadas a "Descansos Quirama" · A&B máx. 4/fecha en ruleta (columna naranja = fecha manual exclusiva fuera de ruleta)'
+    ? 'Fórmulas vinculadas a "Descansos Quirama" · Bar y Producción máx. 2/fecha en ruleta (columna naranja = fecha manual exclusiva fuera de ruleta)'
     : 'Fórmulas vinculadas automáticamente a la hoja "Descansos Quirama"';
   sumSheet.getRange('A2:' + lastColLetter + '2').merge()
     .setValue(subText)
@@ -653,7 +653,7 @@ function rebuildSummarySheet_(ss, options) {
 function updateBanner_(mainSheet, totalEmps, assignedCount, settings, options) {
   const pct = options.length > 0 ? Math.round((100 / options.length) * 10) / 10 : 16.7;
   const modeDesc = settings.mode === 'area_balanced'
-    ? 'Equitativo estricto por área (A&B máx. 4/fecha · Hasta 2 tiros)'
+    ? 'Equitativo estricto por área (Bar y Producción máx. 2/fecha · Hasta 2 tiros)'
     : (settings.mode === 'balanced'
         ? 'Cupos globales (' + options.map(function (o) { return settings.quotas[o.id] || 0; }).join(' / ') + ')'
         : 'Azar libre (' + pct + '% cada fecha)');
@@ -1179,7 +1179,7 @@ function doPost(e) {
 
     if (action === 'addEmployee') {
       const name = String(body.name || '').trim().toUpperCase();
-      const area = String(body.area || 'A&B').trim();
+      const area = String(body.area || 'Bar').trim();
       if (!name) return jsonResponse_({ ok: false, error: 'Nombre vacío.' });
 
       const currentState = readFullState_(ss);

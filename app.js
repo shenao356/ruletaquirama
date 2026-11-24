@@ -6,6 +6,7 @@
     DRIVE_SHEET_ID: '1oMbzcsW7UjO4vrRzRPwsgYIQwRn5OXRF3w0N-mR-vKc',
     DRIVE_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1oMbzcsW7UjO4vrRzRPwsgYIQwRn5OXRF3w0N-mR-vKc/edit',
     DRIVE_FOLDER_URL: 'https://drive.google.com/drive/folders/1C6f0Fm4svcNAL6-IpEDxkFTSKZEuIMcj',
+    COMPANY_LOGO_URL: '',
     POLL_INTERVAL_MS: 5000
   };
 
@@ -30,32 +31,34 @@
     { id: 12, area: 'Ama de Llaves', name: 'VILLA GONZALEZ BLANCA ALICIA' },
     { id: 13, area: 'Ama de Llaves', name: 'ISAZA BOTERO JAIME ALBERTO' },
     { id: 14, area: 'Ama de Llaves', name: 'MARTINEZ DANIELYS CAROLINA' },
-    // A&B (25)
-    { id: 15, area: 'A&B', name: 'RENDON MEJIA PABLO ANDRES' },
-    { id: 16, area: 'A&B', name: 'CORREA DAVID JUAN SEBASTIAN' },
-    { id: 17, area: 'A&B', name: 'MARIN VELASQUEZ JUAN PABLO' },
-    { id: 18, area: 'A&B', name: 'MARIN ARANGO EZEQUIEL DE JESUS' },
-    { id: 19, area: 'A&B', name: 'LOPEZ SUAREZ MARTA LUCIA' },
-    { id: 20, area: 'A&B', name: 'RIOS GARCIA CAROLINA' },
-    { id: 21, area: 'A&B', name: 'ARISTIZABAL HENAO LUZ FANNY' },
-    { id: 22, area: 'A&B', name: 'LOTERO RAMIREZ ERNESTO DE JESUS' },
-    { id: 23, area: 'A&B', name: 'CORTES VALENCIA FERNANDO ALONSO' },
-    { id: 24, area: 'A&B', name: 'MARULANDA JARAMILLO DILSA YARLEDY' },
-    { id: 25, area: 'A&B', name: 'GARCIA CARMONA SANTIAGO' },
-    { id: 26, area: 'A&B', name: 'ARISTIZABAL HENAO BEATRIZ ELENA' },
-    { id: 27, area: 'A&B', name: 'GIL GARCIA DEIBY ANDRES' },
-    { id: 28, area: 'A&B', name: 'MORALES HENAO RAUL SANTIAGO' },
-    { id: 29, area: 'A&B', name: 'ALVAREZ SEPULVEDA WILSON ALEXANDER' },
-    { id: 30, area: 'A&B', name: 'GARCIA NAVAS SARAY ISABELLA' },
-    { id: 31, area: 'A&B', name: 'LONDOÑO SANCHEZ NATALIA' },
-    { id: 32, area: 'A&B', name: 'ALVAREZ TRUJILLO MARIA OLGA' },
-    { id: 33, area: 'A&B', name: 'CARRACEDO GUTIERREZ DIEGO ANDRES' },
-    { id: 34, area: 'A&B', name: 'VALENCIA ARIAS ANLLY PAOLA' },
-    { id: 35, area: 'A&B', name: 'CASTAÑO HOYOS JUAN CARLOS' },
-    { id: 36, area: 'A&B', name: 'CUELLAR GLADIS' },
-    { id: 37, area: 'A&B', name: 'GAVIRIA BEDOYA JORGE IVAN' },
-    { id: 38, area: 'A&B', name: 'PUERTA FERNANDEZ DAIRON' },
-    { id: 39, area: 'A&B', name: 'NARANJO LOPEZ ESTEFANIA' },
+    // Bar (11)
+    { id: 15, area: 'Bar', name: 'RENDON MEJIA PABLO ANDRES' },
+    { id: 16, area: 'Bar', name: 'CORREA DAVID JUAN SEBASTIAN' },
+    { id: 17, area: 'Bar', name: 'GARCIA NAVAS SARAY ISABELLA' },
+    { id: 18, area: 'Bar', name: 'LONDOÑO SANCHEZ NATALIA' },
+    { id: 19, area: 'Bar', name: 'CARRACEDO GUTIERREZ DIEGO ANDRES' },
+    { id: 20, area: 'Bar', name: 'VALENCIA ARIAS ANLLY PAOLA' },
+    { id: 21, area: 'Bar', name: 'CASTAÑO HOYOS JUAN CARLOS' },
+    { id: 22, area: 'Bar', name: 'CUELLAR GLADIS' },
+    { id: 23, area: 'Bar', name: 'GAVIRIA BEDOYA JORGE IVAN' },
+    { id: 24, area: 'Bar', name: 'PUERTA FERNANDEZ DAIRON' },
+    { id: 25, area: 'Bar', name: 'NARANJO LOPEZ ESTEFANIA' },
+    // Producción (12)
+    { id: 26, area: 'Producción', name: 'MARIN VELASQUEZ JUAN PABLO' },
+    { id: 27, area: 'Producción', name: 'MARIN ARANGO EZEQUIEL DE JESUS' },
+    { id: 28, area: 'Producción', name: 'LOPEZ SUAREZ MARTA LUCIA' },
+    { id: 29, area: 'Producción', name: 'RIOS GARCIA CAROLINA' },
+    { id: 30, area: 'Producción', name: 'ARISTIZABAL HENAO LUZ FANNY' },
+    { id: 31, area: 'Producción', name: 'LOTERO RAMIREZ ERNESTO DE JESUS' },
+    { id: 32, area: 'Producción', name: 'CORTES VALENCIA FERNANDO ALONSO' },
+    { id: 33, area: 'Producción', name: 'MARULANDA JARAMILLO DILSA YARLEDY' },
+    { id: 34, area: 'Producción', name: 'GARCIA CARMONA SANTIAGO' },
+    { id: 35, area: 'Producción', name: 'ARISTIZABAL HENAO BEATRIZ ELENA' },
+    { id: 36, area: 'Producción', name: 'GIL GARCIA DEIBY ANDRES' },
+    { id: 37, area: 'Producción', name: 'ALVAREZ TRUJILLO MARIA OLGA' },
+    // Almacén (2)
+    { id: 38, area: 'Almacén', name: 'MORALES HENAO RAUL SANTIAGO' },
+    { id: 39, area: 'Almacén', name: 'ALVAREZ SEPULVEDA WILSON ALEXANDER' },
     // Mantenimiento (4)
     { id: 40, area: 'Mantenimiento', name: 'VARGAS VARGAS JUAN FERNANDO' },
     { id: 41, area: 'Mantenimiento', name: 'GOMEZ CALDERON ROBIRIO ANTONIO' },
@@ -95,7 +98,7 @@
       seasonTag: 'Manual exclusivo',
       colorIndex: 5,
       exclusiveManual: true,
-      exclusiveEmpId: 25
+      exclusiveEmpId: 34
     }
   ];
 
@@ -105,14 +108,14 @@
     { empId: 5,  area: 'Administrativa', name: 'DIAZ BOHORQUEZ NINI JOHANA',         optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
     { empId: 2,  area: 'Administrativa', name: 'CASTRO VALENCIA ANDRES DAVID',       optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
     { empId: 1,  area: 'Administrativa', name: 'SALAS HERNANDEZ JHONATAN JAVIER',    optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
-    { empId: 15, area: 'A&B',            name: 'RENDON MEJIA PABLO ANDRES',          optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
+    { empId: 15, area: 'Bar',            name: 'RENDON MEJIA PABLO ANDRES',          optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
     { empId: 41, area: 'Mantenimiento',  name: 'GOMEZ CALDERON ROBIRIO ANTONIO',     optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
     { empId: 12, area: 'Ama de Llaves',  name: 'VILLA GONZALEZ BLANCA ALICIA',       optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
-    { empId: 29, area: 'A&B',            name: 'ALVAREZ SEPULVEDA WILSON ALEXANDER', optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
-    { empId: 28, area: 'A&B',            name: 'MORALES HENAO RAUL SANTIAGO',        optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' },
-    { empId: 20, area: 'A&B',            name: 'RIOS GARCIA CAROLINA',               optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
-    { empId: 25, area: 'A&B',            name: 'GARCIA CARMONA SANTIAGO',            optionId: 'manual_26_27_dic', label: '26 y 27 de diciembre',          reason: 'Pre-registrado (fecha exclusiva)', exclusiveManual: true },
-    { empId: 17, area: 'A&B',            name: 'MARIN VELASQUEZ JUAN PABLO',         optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
+    { empId: 39, area: 'Almacén',        name: 'ALVAREZ SEPULVEDA WILSON ALEXANDER', optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+    { empId: 38, area: 'Almacén',        name: 'MORALES HENAO RAUL SANTIAGO',        optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' },
+    { empId: 29, area: 'Producción',     name: 'RIOS GARCIA CAROLINA',               optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
+    { empId: 34, area: 'Producción',     name: 'GARCIA CARMONA SANTIAGO',            optionId: 'manual_26_27_dic', label: '26 y 27 de diciembre',          reason: 'Pre-registrado (fecha exclusiva)', exclusiveManual: true },
+    { empId: 26, area: 'Producción',     name: 'MARIN VELASQUEZ JUAN PABLO',         optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
     { empId: 3,  area: 'Administrativa', name: 'LOPEZ BEDOYA ANA MARIA',             optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' }
   ];
 
@@ -120,12 +123,13 @@
   PRE_REGISTERED_MANUAL_RAW.forEach(item => { PRE_REGISTERED_BY_ID[item.empId] = item; });
 
   const MAX_SPINS_PER_PERSON = 2;
-  const AREA_HARD_CAPS = { 'A&B': 4 };
+  const AREA_HARD_CAPS = { 'Bar': 2, 'Producción': 2 };
 
-  const STORAGE_KEY = 'quirama_ruleta_descansos_2026_v4';
-  const EQUITY_SCHEMA_VERSION = 4;
+  const STORAGE_KEY = 'quirama_ruleta_descansos_2026_v5';
+  const EQUITY_SCHEMA_VERSION = 5;
   const SYNC_URL_KEY = 'quirama_sync_url_v1';
   const THEME_KEY = 'quirama_theme_v1';
+  const LOGO_STORAGE_KEY = 'quirama_company_logo_v1';
   const TWO_PI = Math.PI * 2;
   const POINTER_SCREEN_ANGLE = -Math.PI / 2;
 
@@ -505,6 +509,141 @@
 
   function isDarkTheme() {
     return document.documentElement.getAttribute('data-theme') === 'dark';
+  }
+
+  // =========================================================================
+  // 3B. COMPANY LOGO (Header + Modal Upload / URL)
+  // =========================================================================
+  let companyLogo = loadCompanyLogo();
+
+  function loadCompanyLogo() {
+    try {
+      const raw = localStorage.getItem(LOGO_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            src: String(parsed.src || '').trim(),
+            lightBg: parsed.lightBg !== false
+          };
+        }
+      }
+    } catch (_) {}
+    const configLogo = String(CONFIG.COMPANY_LOGO_URL || '').trim();
+    return { src: configLogo, lightBg: true };
+  }
+
+  function saveCompanyLogo(nextLogo) {
+    companyLogo = {
+      src: String((nextLogo && nextLogo.src) || '').trim(),
+      lightBg: nextLogo ? nextLogo.lightBg !== false : true
+    };
+    try {
+      if (companyLogo.src) {
+        localStorage.setItem(LOGO_STORAGE_KEY, JSON.stringify(companyLogo));
+      } else {
+        localStorage.removeItem(LOGO_STORAGE_KEY);
+      }
+    } catch (_) {
+      showToast('El logo es demasiado grande para guardarse en este navegador. Prueba con una imagen más liviana.', '!');
+    }
+    renderCompanyLogo();
+  }
+
+  function renderCompanyLogo() {
+    const hasLogo = Boolean(companyLogo && companyLogo.src);
+    const useLightBg = Boolean(companyLogo && companyLogo.lightBg !== false);
+
+    const badge = document.getElementById('brandBadgeFallback');
+    const wrap = document.getElementById('brandLogoWrap');
+    const img = document.getElementById('brandLogoImg');
+    if (badge) badge.classList.toggle('hidden', hasLogo);
+    if (wrap) {
+      wrap.classList.toggle('hidden', !hasLogo);
+      wrap.classList.toggle('light-bg', useLightBg);
+    }
+    if (img) {
+      if (hasLogo) img.src = companyLogo.src;
+      else img.removeAttribute('src');
+    }
+
+    const previewBox = document.getElementById('logoPreviewBox');
+    const previewImg = document.getElementById('logoPreviewImg');
+    const previewPlaceholder = document.getElementById('logoPreviewPlaceholder');
+    const btnRemove = document.getElementById('btnRemoveLogo');
+    const chkLightBg = document.getElementById('chkLogoLightBg');
+
+    if (previewBox) previewBox.classList.toggle('light-bg', hasLogo && useLightBg);
+    if (previewImg) {
+      previewImg.classList.toggle('hidden', !hasLogo);
+      if (hasLogo) previewImg.src = companyLogo.src;
+      else previewImg.removeAttribute('src');
+    }
+    if (previewPlaceholder) previewPlaceholder.classList.toggle('hidden', hasLogo);
+    if (btnRemove) btnRemove.classList.toggle('hidden', !hasLogo);
+    if (chkLightBg) chkLightBg.checked = useLightBg;
+  }
+
+  function openCompanyLogoModal() {
+    const urlInput = document.getElementById('inputLogoUrl');
+    if (urlInput) {
+      urlInput.value = companyLogo.src && !companyLogo.src.startsWith('data:') ? companyLogo.src : '';
+    }
+    renderCompanyLogo();
+    openModal('modalCompanyLogo');
+  }
+
+  function optimizeLogoImageFile(file) {
+    return new Promise((resolve, reject) => {
+      if (!file || !/^image\/(png|jpeg|jpg|webp|svg\+xml)$/i.test(file.type || '')) {
+        reject(new Error('Formato no soportado. Usa PNG, JPG, WebP o SVG.'));
+        return;
+      }
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('No se pudo leer el archivo de imagen.'));
+      reader.onload = () => {
+        const dataUrl = String(reader.result || '');
+        if (!dataUrl.startsWith('data:image/')) {
+          reject(new Error('Archivo de imagen inválido.'));
+          return;
+        }
+        if (file.type === 'image/svg+xml') {
+          if (dataUrl.length > 350000) {
+            reject(new Error('El archivo SVG es demasiado pesado (máx. 250 KB).'));
+            return;
+          }
+          resolve(dataUrl);
+          return;
+        }
+        const img = new Image();
+        img.onerror = () => reject(new Error('La imagen no pudo procesarse.'));
+        img.onload = () => {
+          try {
+            const maxW = 480;
+            const maxH = 160;
+            const ratio = Math.min(1, maxW / Math.max(1, img.width), maxH / Math.max(1, img.height));
+            const targetW = Math.max(1, Math.round(img.width * ratio));
+            const targetH = Math.max(1, Math.round(img.height * ratio));
+            const canvas = document.createElement('canvas');
+            canvas.width = targetW;
+            canvas.height = targetH;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, targetW, targetH);
+            ctx.drawImage(img, 0, 0, targetW, targetH);
+            let out = canvas.toDataURL('image/png');
+            if (out.length > 300000) {
+              const webp = canvas.toDataURL('image/webp', 0.88);
+              if (webp.startsWith('data:image/webp') && webp.length < out.length) out = webp;
+            }
+            resolve(out);
+          } catch (_) {
+            resolve(dataUrl);
+          }
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
   }
 
   // =========================================================================
@@ -1634,7 +1773,7 @@
     const eqPct = formatPct(1 / Math.max(1, opts.length));
     const equityModel = computeEquityModel();
     const modeDesc = state.mode === 'area_balanced'
-      ? `Equitativo estricto por área (A&B máx. 4/fecha · General ${formatRangeTarget(equityModel.globalMinTarget, equityModel.globalMaxTarget)}/fecha · Hasta 2 tiros)`
+      ? `Equitativo estricto por área (Bar y Producción máx. 2/fecha · General ${formatRangeTarget(equityModel.globalMinTarget, equityModel.globalMaxTarget)}/fecha · Hasta 2 tiros)`
       : (state.mode === 'balanced'
           ? `Cupos globales (${opts.map(o => state.quotas[o.id] || 0).join(' / ')})`
           : `Azar libre (${eqPct} cada fecha)`);
@@ -1765,7 +1904,7 @@
     const lastColL = colLetter(totalCols - 1);
     const lastSumColL = colLetter(totalCols - 2);
     const s2Subtitle = exclusiveOpts.length > 0
-      ? 'Fórmulas vinculadas a "Descansos Quirama" · A&B máx. 4/fecha en ruleta (columna naranja = fecha manual exclusiva fuera de ruleta)'
+      ? 'Fórmulas vinculadas a "Descansos Quirama" · Bar y Producción máx. 2/fecha en ruleta (columna naranja = fecha manual exclusiva fuera de ruleta)'
       : 'Fórmulas vinculadas automáticamente a la hoja "Descansos Quirama"';
 
     const s2Rows = [
@@ -2830,8 +2969,9 @@
       const wouldExceedArea = areaInfo && !isAlreadyThisOpt && (aCount + 1 > aMaxTarget);
       const wouldExceedGlobal = !isAlreadyThisOpt && (gCount + 1 > gCap);
       const quotaHint = `${emp.area}: ${aCount}/${aMaxTarget} · General: ${gCount}/${gCap}`;
-      const warnLabel = emp.area === 'A&B' && wouldExceedArea
-        ? '⚠️ Supera máximo estricto de 4 en A&B'
+      const areaHardCap = AREA_HARD_CAPS[emp.area];
+      const warnLabel = areaHardCap !== undefined && wouldExceedArea
+        ? `⚠️ Supera máximo estricto de ${areaHardCap} en ${emp.area}`
         : '⚠️ Supera cupo equitativo';
       const warnTag = (wouldExceedArea || wouldExceedGlobal)
         ? `<span class="manual-quota-warn">${warnLabel}</span>`
@@ -2884,11 +3024,9 @@
     const eqModel = computeEquityModel();
     const rouletteEmps = eqModel.rouletteTotalEmps;
     const eqPct = formatPct(1 / k);
-    const abRouletteCount = eqModel.byArea['A&B'] ? eqModel.byArea['A&B'].rouletteTotal : state.employees.filter(e => e.area === 'A&B').length;
     const globalRange = formatRangeTarget(Math.floor(rouletteEmps / k), Math.ceil(rouletteEmps / k));
-    const abRange = formatRangeTarget(Math.floor(abRouletteCount / k), Math.min(AREA_HARD_CAPS['A&B'] || 999, Math.ceil(abRouletteCount / k)));
     previewEl.textContent = state.mode === 'area_balanced'
-      ? `${draftDates.length} fechas activas · Reparto equitativo: ${globalRange} personas/fecha (A&B: máx. ${abRange}/fecha)`
+      ? `${draftDates.length} fechas activas · Reparto equitativo: ${globalRange} personas/fecha (Bar y Producción: máx. 2/fecha)`
       : `${draftDates.length} fechas activas · Probabilidad base: ${eqPct} cada una`;
 
     // Check if any originally assigned option was deleted in draft
@@ -3085,12 +3223,14 @@
     const pct = total > 0 ? Math.round((assigned / total) * 100) : 0;
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
     const model = computeEquityModel();
-    const abInfo = model.byArea['A&B'];
-    const abCapTxt = abInfo ? `A&B máx. ${abInfo.maxTarget}/fecha` : `${formatRangeTarget(model.globalMinTarget, model.globalMaxTarget)}/fecha`;
+    const cappedAreas = Object.keys(AREA_HARD_CAPS).filter(a => Boolean(model.byArea[a]));
+    const capTxt = cappedAreas.length > 0
+      ? `${cappedAreas.join(' y ')} máx. 2/fecha`
+      : `${formatRangeTarget(model.globalMinTarget, model.globalMaxTarget)}/fecha`;
 
     document.getElementById('headerTotalPeople').textContent = total;
     document.getElementById('headerModeLabel').textContent = state.mode === 'area_balanced'
-      ? `Equitativo por área (${abCapTxt} · General ${formatRangeTarget(model.globalMinTarget, model.globalMaxTarget)}/fecha)`
+      ? `Equitativo por área (${capTxt} · General ${formatRangeTarget(model.globalMinTarget, model.globalMaxTarget)}/fecha)`
       : (state.mode === 'balanced'
           ? `Cupos globales (${state.options.length} fechas)`
           : `Azar libre (${eqPct} por fecha)`);
@@ -3244,17 +3384,14 @@
     const emp = state.employees.find(e => e.id === selectedPersonId);
     const hasPending = Boolean(emp) && hasPendingFirstSpin(emp.id);
     const canSpin = Boolean(emp) && !isSpinning && (canSpinRoulette(emp.id) || hasPending);
-    const canManual = Boolean(emp) && !isSpinning;
     const btnMain = document.getElementById('btnSpinMain');
     const btnHub = document.getElementById('btnHubSpin');
-    const btnManual = document.getElementById('btnManualAssign');
     const btnText = document.getElementById('btnSpinText');
     const hubTitle = document.getElementById('hubTitle');
     const hubSub = document.getElementById('hubSubtext');
 
     btnMain.disabled = !canSpin;
     btnHub.disabled = !canSpin;
-    btnManual.disabled = !canManual;
 
     if (isSpinning) {
       btnText.textContent = 'Girando...';
@@ -3309,7 +3446,7 @@
           `${state.options.length} fechas en ruleta · ${selectedEmp.area}: ${aRange}/fecha · General: ${gRange}/fecha`;
       } else {
         document.getElementById('dateGridSummaryLabel').textContent =
-          `${state.options.length} fechas en ruleta · A&B máx. 4/fecha · General: ${gRange}/fecha`;
+          `${state.options.length} fechas en ruleta · Bar y Producción máx. 2/fecha · General: ${gRange}/fecha`;
       }
     } else if (state.mode === 'balanced') {
       document.getElementById('dateGridSummaryLabel').textContent = `${state.options.length} fechas en la ruleta · Cupos globales`;
@@ -3401,32 +3538,22 @@
         const pendingSpin = !rec && state.pendingSpins ? state.pendingSpins[emp.id] : null;
         const pendingOpt = pendingSpin ? resolveAssignedOption(pendingSpin) : null;
         const spunAlready = hasSpunRoulette(emp.id);
-        const lockedPre = isPreRegisteredLocked(emp.id);
         const flashClass = emp.id === lastFlashedId ? 'row-flash' : '';
         let actionHtml = '';
         if (rec) {
-          if (rec.isManual && !spunAlready && !lockedPre) {
-            actionHtml = `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Manual</button>` +
-              `<button type="button" data-action="clear" data-emp-id="${emp.id}" class="link-btn danger">Quitar</button>`;
-          } else {
-            const lockLabel = rec.isPreRegistered
-              ? '🔒 Manual'
-              : `🔒 ${rec.spinCount === 2 ? '2/2' : '1/2'}`;
-            const lockTitle = rec.isPreRegistered
-              ? 'Pre-registrado manualmente (bloqueado como turno completado)'
-              : 'Turno definitivo completado en la ruleta';
-            actionHtml = `<span class="locked-tag" title="${lockTitle}">${lockLabel}</span>` +
-              `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
-          }
+          const lockLabel = rec.isPreRegistered
+            ? '🔒 Manual'
+            : (rec.isManual ? '🔒 Manual' : `🔒 ${rec.spinCount === 2 ? '2/2' : '1/2'}`);
+          const lockTitle = rec.isPreRegistered
+            ? 'Pre-registrado manualmente (bloqueado como turno completado)'
+            : (rec.isManual ? 'Asignado manualmente (sin ruleta)' : 'Turno definitivo completado en la ruleta');
+          actionHtml = `<span class="locked-tag" title="${lockTitle}">${lockLabel}</span>`;
         } else if (pendingSpin) {
-          actionHtml = `<button type="button" data-action="decide" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Decidir 1/2</button>` +
-            `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
+          actionHtml = `<button type="button" data-action="decide" data-emp-id="${emp.id}" class="link-btn">Decidir 1/2</button>`;
         } else if (spunAlready) {
-          actionHtml = `<span class="locked-tag" title="Ya completó su turno en la ruleta">🔒 Listo</span>` +
-            `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
+          actionHtml = `<span class="locked-tag" title="Ya completó su turno en la ruleta">🔒 Listo</span>`;
         } else {
-          actionHtml = `<button type="button" data-action="select" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Seleccionar</button>` +
-            `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
+          actionHtml = `<button type="button" data-action="select" data-emp-id="${emp.id}" class="link-btn">Seleccionar</button>`;
         }
 
         let dateCellHtml = `<span style="color:var(--text-muted);font-style:italic;">Pendiente</span>`;
@@ -3657,6 +3784,55 @@
       </label>`).join('');
   }
 
+  function updateAdminClearButton() {
+    const sel = document.getElementById('adminManualEmpSelect');
+    const clearWrap = document.getElementById('adminClearWrap');
+    if (!sel || !clearWrap) return;
+    const empId = Number(sel.value);
+    const rec = state.assignments[empId];
+    const canClear = Boolean(rec && rec.isManual && !isPreRegisteredLocked(empId) && !hasSpunRoulette(empId));
+    clearWrap.classList.toggle('hidden', !canClear);
+  }
+
+  function renderAdminManualSelector() {
+    const sel = document.getElementById('adminManualEmpSelect');
+    if (!sel) return;
+    sel.innerHTML = state.employees.map(emp => {
+      const rec = state.assignments[emp.id];
+      const opt = rec ? resolveAssignedOption(rec) : null;
+      const statusTxt = opt ? (rec.isManual ? `Manual: ${opt.shortLabel}` : opt.shortLabel) : 'Pendiente';
+      return `<option value="${emp.id}">[${xmlEscape(emp.area)}] ${xmlEscape(emp.name)} — ${xmlEscape(statusTxt)}</option>`;
+    }).join('');
+    if (selectedPersonId && state.employees.some(e => e.id === selectedPersonId)) {
+      sel.value = String(selectedPersonId);
+    }
+    updateAdminClearButton();
+  }
+
+  function confirmClearManualAssignment(empId) {
+    const emp = state.employees.find(x => x.id === Number(empId));
+    if (!emp) return;
+    if (isPreRegisteredLocked(emp.id)) {
+      showToast(`🔒 ${emp.name} tiene descanso manual pre-registrado y bloqueado.`, '🔒');
+      return;
+    }
+    if (hasSpunRoulette(emp.id)) {
+      showToast(`🔒 ${emp.name} ya completó su turno definitivo en la ruleta. No se puede borrar.`, '🔒');
+      return;
+    }
+    openConfirm(
+      'Quitar asignación manual',
+      `¿Deseas quitar la fecha manual de ${emp.name} y dejarlo como pendiente?`,
+      async () => {
+        delete state.assignments[emp.id];
+        saveState();
+        if (syncUrl) await postToDrive({ action: 'clearAssignment', empId: emp.id });
+        renderAll();
+        showToast(`${emp.name} volvió a estado pendiente`, '↺');
+      }
+    );
+  }
+
   function syncSettingsModal() {
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
     const model = computeEquityModel();
@@ -3664,14 +3840,14 @@
 
     const areaPreview = document.getElementById('equityTargetsPreview');
     if (areaPreview) {
-      const areasSorted = Object.values(model.byArea).sort((a, b) => b.total - a.total);
+      const areasOrdered = Object.values(model.byArea);
       const chips = [
         `<span class="equity-chip highlight"><strong>Ruleta (${model.rouletteTotalEmps}):</strong> ${gRange} / fecha</span>`
-      ].concat(areasSorted.map((a, idx) => {
+      ].concat(areasOrdered.map((a) => {
         const capTxt = a.hardCap !== null
           ? `máx. ${a.maxTarget} / fecha${a.exclusiveAssigned > 0 ? ` (+${a.exclusiveAssigned} excl.)` : ''}`
           : `${formatRangeTarget(a.minTarget, a.maxTarget)} / fecha`;
-        return `<span class="equity-chip ${idx === 0 ? 'highlight' : ''}"><strong>${xmlEscape(a.area)} (${a.total}):</strong> ${capTxt}</span>`;
+        return `<span class="equity-chip ${a.hardCap !== null ? 'highlight' : ''}"><strong>${xmlEscape(a.area)} (${a.total}):</strong> ${capTxt}</span>`;
       }));
       areaPreview.innerHTML = chips.join('');
     }
@@ -3684,6 +3860,10 @@
     });
     renderQuotaInputs(state.quotas);
     document.getElementById('quotaInputsWrap').classList.toggle('hidden', state.mode !== 'balanced');
+
+    const adminDetails = document.getElementById('adminManualDetails');
+    if (adminDetails) adminDetails.open = false;
+    renderAdminManualSelector();
   }
 
   // =========================================================================
@@ -3746,28 +3926,6 @@
     } else if (btn.dataset.action === 'decide') {
       selectPerson(empId);
       openSpinDecisionModal(empId);
-    } else if (btn.dataset.action === 'manual') {
-      openManualAssignModal(empId);
-    } else if (btn.dataset.action === 'clear') {
-      if (isPreRegisteredLocked(empId)) {
-        showToast(`🔒 ${emp.name} tiene descanso manual pre-registrado y bloqueado.`, '🔒');
-        return;
-      }
-      if (hasSpunRoulette(empId)) {
-        showToast(`🔒 ${emp.name} ya completó su turno definitivo en la ruleta. No se puede borrar.`, '🔒');
-        return;
-      }
-      openConfirm(
-        'Quitar asignación manual',
-        `¿Deseas quitar la fecha manual de ${emp.name} y dejarlo como pendiente?`,
-        async () => {
-          delete state.assignments[empId];
-          saveState();
-          if (syncUrl) await postToDrive({ action: 'clearAssignment', empId });
-          renderAll();
-          showToast(`${emp.name} volvió a estado pendiente`, '↺');
-        }
-      );
     }
   });
 
@@ -3775,7 +3933,6 @@
   document.getElementById('btnPickRandom').addEventListener('click', pickRandomPending);
   document.getElementById('btnSpinMain').addEventListener('click', spinWheel);
   document.getElementById('btnHubSpin').addEventListener('click', spinWheel);
-  document.getElementById('btnManualAssign').addEventListener('click', () => openManualAssignModal(selectedPersonId));
   document.getElementById('btnKeepFirstSpin').addEventListener('click', confirmKeepFirstSpin);
   document.getElementById('btnTakeSecondSpin').addEventListener('click', startSecondAndFinalSpin);
 
@@ -4132,11 +4289,90 @@
     renderAll();
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
     const msg = state.mode === 'area_balanced'
-      ? 'Modo activo: Equitativo estricto por área (A&B máx. 4/fecha)'
+      ? 'Modo activo: Equitativo estricto por área (Bar y Producción máx. 2/fecha)'
       : (state.mode === 'balanced'
           ? 'Modo activo: Cupos globales personalizados'
           : `Modo activo: Azar libre (${eqPct} c/u)`);
     showToast(msg, '✓');
+  });
+
+  // Discreet Admin Manual Assignment inside Settings
+  document.getElementById('adminManualEmpSelect').addEventListener('change', updateAdminClearButton);
+
+  document.getElementById('btnOpenAdminManual').addEventListener('click', () => {
+    const sel = document.getElementById('adminManualEmpSelect');
+    const empId = sel ? Number(sel.value) : selectedPersonId;
+    if (!empId) return;
+    closeModal('modalSettings');
+    openManualAssignModal(empId);
+  });
+
+  document.getElementById('btnAdminClearManual').addEventListener('click', () => {
+    const sel = document.getElementById('adminManualEmpSelect');
+    const empId = sel ? Number(sel.value) : selectedPersonId;
+    if (!empId) return;
+    closeModal('modalSettings');
+    confirmClearManualAssignment(empId);
+  });
+
+  // Company Logo controls
+  document.getElementById('btnCompanyLogo').addEventListener('click', openCompanyLogoModal);
+  document.getElementById('brandLogoTrigger').addEventListener('click', openCompanyLogoModal);
+  document.getElementById('btnOpenLogoFromSettings').addEventListener('click', () => {
+    closeModal('modalSettings');
+    openCompanyLogoModal();
+  });
+
+  document.getElementById('inputLogoFile').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const optimizedSrc = await optimizeLogoImageFile(file);
+      saveCompanyLogo({ src: optimizedSrc, lightBg: document.getElementById('chkLogoLightBg').checked });
+      document.getElementById('inputLogoUrl').value = '';
+      showToast('Logo de la empresa cargado correctamente', '✓');
+    } catch (err) {
+      showToast((err && err.message) || 'No se pudo cargar la imagen del logo', '!');
+    }
+  });
+
+  function applyLogoUrlFromInput() {
+    const raw = document.getElementById('inputLogoUrl').value.trim();
+    if (!raw) {
+      showToast('Ingresa la URL directa de una imagen (PNG, JPG, WebP o SVG)', '!');
+      return;
+    }
+    if (!/^(https?:\/\/|\.\/|\/|data:image\/)/i.test(raw)) {
+      showToast('La URL debe comenzar con https:// o ser una ruta válida de imagen', '!');
+      return;
+    }
+    saveCompanyLogo({ src: raw, lightBg: document.getElementById('chkLogoLightBg').checked });
+    showToast('Logo actualizado desde enlace', '✓');
+  }
+
+  document.getElementById('btnApplyLogoUrl').addEventListener('click', applyLogoUrlFromInput);
+  document.getElementById('inputLogoUrl').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      applyLogoUrlFromInput();
+    }
+  });
+
+  document.getElementById('btnRemoveLogo').addEventListener('click', () => {
+    saveCompanyLogo({ src: '', lightBg: true });
+    document.getElementById('inputLogoUrl').value = '';
+    showToast('Logo eliminado (se restauró la insignia Q26)', '↺');
+  });
+
+  document.getElementById('chkLogoLightBg').addEventListener('change', (e) => {
+    saveCompanyLogo({ src: companyLogo.src, lightBg: e.target.checked });
+  });
+
+  document.getElementById('logoPreviewImg').addEventListener('error', () => {
+    if (companyLogo && companyLogo.src) {
+      showToast('No se pudo cargar la imagen del enlace. Verifica que la URL sea pública y directa a una imagen.', '!');
+    }
   });
 
   // Backup export / import
@@ -4211,6 +4447,7 @@
   // 14. BOOT
   // =========================================================================
   initTheme();
+  renderCompanyLogo();
   const pendingDecisionId = Object.keys(state.pendingSpins || {})[0];
   const firstPending = pendingDecisionId
     ? state.employees.find(e => e.id === Number(pendingDecisionId))

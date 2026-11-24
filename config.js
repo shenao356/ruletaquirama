@@ -10,5 +10,6 @@ window.QUIRAMA_CONFIG = {
   DRIVE_SHEET_ID: '1oMbzcsW7UjO4vrRzRPwsgYIQwRn5OXRF3w0N-mR-vKc',
   DRIVE_SHEET_URL: 'https://docs.google.com/spreadsheets/d/1oMbzcsW7UjO4vrRzRPwsgYIQwRn5OXRF3w0N-mR-vKc/edit',
   DRIVE_FOLDER_URL: 'https://drive.google.com/drive/folders/1C6f0Fm4svcNAL6-IpEDxkFTSKZEuIMcj',
+  COMPANY_LOGO_URL: '',
   POLL_INTERVAL_MS: 5000
 };
