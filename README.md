@@ -6,44 +6,39 @@ Aplicación web responsiva y equitativa para sortear los descansos de fin de añ
 - **Hoja sincronizada en Google Drive:** [Descansos Quirama Fin de Año 2026](https://docs.google.com/spreadsheets/d/1oMbzcsW7UjO4vrRzRPwsgYIQwRn5OXRF3w0N-mR-vKc/edit)
 - **Carpeta en Google Drive:** [RULETA DICIEMBRE 2026](https://drive.google.com/drive/folders/1C6f0Fm4svcNAL6-IpEDxkFTSKZEuIMcj)
 
-## Fechas de descanso y equilibrio garantizado
+## Fechas activas en la ruleta y equilibrio garantizado
 
-| Opción | Fechas | Días | Total Quirama | A&B (25 personas) |
+| Opción | Fechas | Días | A&B (24 en ruleta) | Total Quirama (43 en ruleta) |
 | --- | --- | --- | --- | --- |
-| 1 | **23 y 24 de diciembre** | Mié 23 – Jue 24 Dic 2026 | **11 personas** | **6 o 7 personas** |
-| 2 | **25 y 26 de diciembre** | Vie 25 – Sáb 26 Dic 2026 | **11 personas** | **6 o 7 personas** |
-| 3 | **30 y 31 de diciembre** | Mié 30 – Jue 31 Dic 2026 | **11 personas** | **6 o 7 personas** |
-| 4 | **01 y 02 de enero** | Vie 01 – Sáb 02 Ene 2027 | **11 personas** | **6 o 7 personas** |
+| 1 | **23 y 24 de diciembre** | Mié 23 – Jue 24 Dic 2026 | **Máx. 4 personas** | **7 personas** |
+| 2 | **24 y 25 de diciembre** | Jue 24 – Vie 25 Dic 2026 | **Máx. 4 personas** | **7 personas** |
+| 3 | **25 y 26 de diciembre** | Vie 25 – Sáb 26 Dic 2026 | **Máx. 4 personas** | **7 personas** |
+| 4 | **30 y 31 de diciembre** | Mié 30 – Jue 31 Dic 2026 | **Máx. 4 personas** | **7 personas** |
+| 5 | **31 de diciembre y 01 de enero** | Jue 31 Dic – Vie 01 Ene 2027 | **Máx. 4 personas** | **8 personas** |
+| 6 | **01 y 02 de enero** | Vie 01 – Sáb 02 Ene 2027 | **Máx. 4 personas** | **7 personas** |
+
+> **Nota:** Adicionalmente, **GARCIA CARMONA SANTIAGO (A&B)** cuenta con la fecha manual exclusiva **26 y 27 de diciembre** (`Sáb 26 – Dom 27 Dic 2026`), la cual **no aparece en la ruleta** y completa el total de 25 personas en A&B y 44 colaboradores en Quirama.
 
 Por defecto opera en modo **Equitativo estricto por área y fecha** usando aleatoriedad criptográfica (`crypto.getRandomValues`) combinada con balanceo exacto por área y global:
-- **A&B (25 personas):** siempre queda repartido en **6, 6, 6 y 7** personas por fecha (diferencia máxima de 1).
-- **Recepción (4)** y **Mantenimiento (4):** exactamente **1** persona por fecha.
-- **Administrativa (5)** y **Ama de Llaves (5):** **1, 1, 1 y 2** personas por fecha.
-- **Total general (44 personas):** exactamente **11 personas por fecha** (`11 / 11 / 11 / 11`), sin fechas sobrecargadas.
-- Si se agregan o editan fechas/colaboradores, las metas equitativas se recalculan automáticamente.
+- **13 colaboradores pre-registrados manualmente** (bloqueados desde el inicio como turnos completados, reflejados en la app, en Google Sheets y en el `.xlsx`); quedan **31 colaboradores pendientes** por girar.
+- **A&B (25 personas = 24 en ruleta + 1 exclusiva):** regla estricta de **máximo 4 personas por fecha** en las 6 fechas activas (`6 × 4 = 24`: 5 ya asignados en esas fechas + 19 pendientes).
+- **Recepción (4), Ama de Llaves (5), Mantenimiento (4) y Mantenimiento Zonas Húmedas (1):** reparto equitativo de máximo 1 persona por fecha en cada área y balanceo global final de **7–8 personas por fecha**.
+- **Hasta 2 tiros por persona con confirmación:** al terminar el 1.er tiro, la app pregunta explícitamente si desea **conservar la fecha obtenida** (definitivo y bloqueado) o **girar una 2.ª y última vez** (el 2.º resultado reemplaza al 1.º y queda definitivo e irreversible).
 
-## Activar sincronización en vivo con Google Drive (1 minuto)
+## Actualizar o activar sincronización en vivo con Google Drive
 
-La hoja `Descansos Quirama Fin de Año 2026` ya fue creada en tu carpeta de Google Drive con los 44 colaboradores y las 3 pestañas (`Descansos Quirama`, `Resumen por Área` con fórmulas e `Historial de Giros`). Para que todos los dispositivos lean y escriban en tiempo real sin duplicados:
+La hoja `Descansos Quirama Fin de Año 2026` cuenta con 3 pestañas (`Descansos Quirama`, `Resumen por Área` con fórmulas e `Historial de Giros`). Para activar la versión v4 (2 tiros con bloqueo atómico en servidor, 6 fechas y fecha manual exclusiva):
 
 1. Abre la hoja en Google Drive: [Descansos Quirama Fin de Año 2026](https://docs.google.com/spreadsheets/d/1oMbzcsW7UjO4vrRzRPwsgYIQwRn5OXRF3w0N-mR-vKc/edit).
 2. Ve al menú **Extensiones → Apps Script**.
-3. Borra el código inicial, pega el contenido completo de [`apps-script/Code.gs`](./apps-script/Code.gs) y guarda (`Ctrl + S`).
-4. Haz clic en **Implementar → Nueva implementación** (o **Administrar implementaciones → Editar → Nueva versión** si estás actualizando):
-   - **Tipo:** Aplicación web
-   - **Ejecutar como:** Yo (tu cuenta)
-   - **Quién tiene acceso:** Cualquier usuario
-5. Autoriza los permisos y copia la URL que termina en `/exec`.
-6. **Para conectarla en todos los dispositivos:**
-   - **Opción A (permanente):** pega esa URL en `APPS_SCRIPT_URL` dentro de [`config.js`](./config.js) y haz commit en GitHub.
-   - **Opción B (al instante sin editar código):** abre la ruleta, pulsa **Conectar Drive**, pega la URL `/exec` y usa el botón **Copiar enlace para otros dispositivos** para enviarlo por WhatsApp.
+3. Borra el código anterior, pega el contenido completo de [`apps-script/Code.gs`](./apps-script/Code.gs) y guarda (`Ctrl + S`).
+4. Haz clic en **Implementar → Administrar implementaciones → Editar (lápiz) → Versión: Nueva versión → Implementar** (mantiene exactamente la misma URL `/exec` configurada en [`config.js`](./config.js)).
 
 ## Funciones principales
 
-- **Equilibrio estricto por área y fecha:** garantiza que ninguna fecha quede sobrecargada (máx. diferencia de 1 persona por fecha en cada área y en el total general), protegiendo especialmente la cobertura diaria de **A&B** (6–7 por fecha) y el resto de áreas. Cuando una fecha completa su cupo para el área del participante, se retira automáticamente de su ruleta.
-- **Solo 1 giro por persona (bloqueo estricto):** cada colaborador puede girar la ruleta una sola vez. Al terminar su tiro, los botones de giro y atajos se bloquean, no existe opción de re-girar ni deshacer un giro, y el backend en Google Apps Script (`LockService`) rechaza cualquier segundo intento desde otro dispositivo.
-- **Multi-dispositivo con bloqueo atómico:** `LockService` en Apps Script impide que dos celulares sorteen a la misma persona al mismo tiempo o excedan el cupo equitativo de una fecha; todos los dispositivos se actualizan cada 5 segundos.
-- **Fechas editables y ampliables (`📅 Fechas`):** permite modificar, agregar (hasta 12 opciones) o eliminar fechas de descanso en cualquier momento, ajustando automáticamente la ruleta, las metas equitativas por área, el resumen por área y el archivo Excel.
-- **Asignación manual con alerta (`✎ Asignar manual`):** permite asignar una fecha manualmente cuando haya un caso especial, mostrando ocupación actual por área/fecha, alerta si supera el cupo equitativo y marcando el registro como `Manual (sin ruleta)` en la tabla, historial, Google Drive y Excel.
-- **Exportación real a Excel (`.xlsx`):** genera un archivo formateado con 3 hojas (`Descansos Quirama`, `Resumen por Área` con fórmulas `COUNTIFS`/`SUM` e `Historial de Giros`), además de CSV y copiado directo para pegar en Excel.
-- **Tema claro y oscuro**, sonido mecánico opcional, búsqueda sin acentos por nombre o área y agregar colaboradores nuevos.
+- **Regla estricta A&B (máx. 4/fecha) y equilibrio global:** protege la cobertura de A&B (máximo 4 personas por fecha en las 6 fechas activas) y distribuye equitativamente el resto de áreas sin sobrecargar fechas.
+- **Hasta 2 tiros con confirmación explícita:** tras el 1.er tiro se abre un modal obligatorio para conservar la fecha o girar una 2.ª y última vez; una vez confirmado o tras el 2.º tiro, el turno queda bloqueado.
+- **13 personas pre-registradas y bloqueadas:** cargadas en la app, en Google Sheets y en el Excel `.xlsx`, incluyendo la fecha manual exclusiva `26 y 27 de diciembre` para Santiago García Carmona (sin aparecer en la ruleta).
+- **Multi-dispositivo con sincronización en vivo:** `LockService` en Apps Script evita conflictos entre dispositivos y actualiza el estado cada 5 segundos.
+- **Exportación real a Excel (`.xlsx`):** genera un archivo formateado con 3 hojas (`Descansos Quirama`, `Resumen por Área` con fórmulas `COUNTIFS`/`SUM` incluyendo la columna exclusiva manual, e `Historial de Giros`), además de CSV y copiado directo para Excel.
+- **Tema claro y oscuro**, sonido mecánico opcional, búsqueda sin acentos por nombre o área, gestión dinámica de fechas y asignación manual con alerta.

@@ -77,21 +77,60 @@
   ];
 
   const DEFAULT_OPTIONS_RAW = [
-    { id: '0', label: '23 y 24 de diciembre', shortLabel: '23 y 24 Dic', days: 'Mié 23 – Jue 24 Dic 2026', seasonTag: 'Nochebuena', colorIndex: 0 },
-    { id: '1', label: '25 y 26 de diciembre', shortLabel: '25 y 26 Dic', days: 'Vie 25 – Sáb 26 Dic 2026', seasonTag: 'Navidad',    colorIndex: 1 },
-    { id: '2', label: '30 y 31 de diciembre', shortLabel: '30 y 31 Dic', days: 'Mié 30 – Jue 31 Dic 2026', seasonTag: 'Fin de Año', colorIndex: 2 },
-    { id: '3', label: '01 y 02 de enero',     shortLabel: '01 y 02 Ene', days: 'Vie 01 – Sáb 02 Ene 2027', seasonTag: 'Año Nuevo',  colorIndex: 3 }
+    { id: '0', label: '23 y 24 de diciembre',          shortLabel: '23 y 24 Dic',     days: 'Mié 23 – Jue 24 Dic 2026',     seasonTag: 'Nochebuena', colorIndex: 0 },
+    { id: '1', label: '24 y 25 de diciembre',          shortLabel: '24 y 25 Dic',     days: 'Jue 24 – Vie 25 Dic 2026',     seasonTag: 'Navidad',    colorIndex: 6 },
+    { id: '2', label: '25 y 26 de diciembre',          shortLabel: '25 y 26 Dic',     days: 'Vie 25 – Sáb 26 Dic 2026',     seasonTag: 'Navidad',    colorIndex: 1 },
+    { id: '3', label: '30 y 31 de diciembre',          shortLabel: '30 y 31 Dic',     days: 'Mié 30 – Jue 31 Dic 2026',     seasonTag: 'Fin de Año', colorIndex: 4 },
+    { id: '4', label: '31 de diciembre y 01 de enero', shortLabel: '31 Dic y 01 Ene', days: 'Jue 31 Dic – Vie 01 Ene 2027', seasonTag: 'Año Nuevo',  colorIndex: 2, wheelTop: '31 Dic y', wheelBottom: '01 ENERO' },
+    { id: '5', label: '01 y 02 de enero',              shortLabel: '01 y 02 Ene',     days: 'Vie 01 – Sáb 02 Ene 2027',     seasonTag: 'Año Nuevo',  colorIndex: 3 }
   ];
 
-  const STORAGE_KEY = 'quirama_ruleta_descansos_2026_v2';
-  const EQUITY_SCHEMA_VERSION = 3;
+  // Fecha manual exclusiva que NO aparece en la ruleta (solo para GARCIA CARMONA SANTIAGO)
+  const EXCLUSIVE_MANUAL_OPTIONS_RAW = [
+    {
+      id: 'manual_26_27_dic',
+      label: '26 y 27 de diciembre',
+      shortLabel: '26 y 27 Dic',
+      days: 'Sáb 26 – Dom 27 Dic 2026',
+      seasonTag: 'Manual exclusivo',
+      colorIndex: 5,
+      exclusiveManual: true,
+      exclusiveEmpId: 25
+    }
+  ];
+
+  const PRE_REGISTERED_TIMESTAMP = '24/11/2026 14:35:00';
+  const PRE_REGISTERED_MANUAL_RAW = [
+    { empId: 4,  area: 'Administrativa', name: 'FRANCO OSPINA DIEGO ALEJANDRO',      optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+    { empId: 5,  area: 'Administrativa', name: 'DIAZ BOHORQUEZ NINI JOHANA',         optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
+    { empId: 2,  area: 'Administrativa', name: 'CASTRO VALENCIA ANDRES DAVID',       optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+    { empId: 1,  area: 'Administrativa', name: 'SALAS HERNANDEZ JHONATAN JAVIER',    optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
+    { empId: 15, area: 'A&B',            name: 'RENDON MEJIA PABLO ANDRES',          optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
+    { empId: 41, area: 'Mantenimiento',  name: 'GOMEZ CALDERON ROBIRIO ANTONIO',     optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+    { empId: 12, area: 'Ama de Llaves',  name: 'VILLA GONZALEZ BLANCA ALICIA',       optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+    { empId: 29, area: 'A&B',            name: 'ALVAREZ SEPULVEDA WILSON ALEXANDER', optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+    { empId: 28, area: 'A&B',            name: 'MORALES HENAO RAUL SANTIAGO',        optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' },
+    { empId: 20, area: 'A&B',            name: 'RIOS GARCIA CAROLINA',               optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
+    { empId: 25, area: 'A&B',            name: 'GARCIA CARMONA SANTIAGO',            optionId: 'manual_26_27_dic', label: '26 y 27 de diciembre',          reason: 'Pre-registrado (fecha exclusiva)', exclusiveManual: true },
+    { empId: 17, area: 'A&B',            name: 'MARIN VELASQUEZ JUAN PABLO',         optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
+    { empId: 3,  area: 'Administrativa', name: 'LOPEZ BEDOYA ANA MARIA',             optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' }
+  ];
+
+  const PRE_REGISTERED_BY_ID = {};
+  PRE_REGISTERED_MANUAL_RAW.forEach(item => { PRE_REGISTERED_BY_ID[item.empId] = item; });
+
+  const MAX_SPINS_PER_PERSON = 2;
+  const AREA_HARD_CAPS = { 'A&B': 4 };
+
+  const STORAGE_KEY = 'quirama_ruleta_descansos_2026_v4';
+  const EQUITY_SCHEMA_VERSION = 4;
   const SYNC_URL_KEY = 'quirama_sync_url_v1';
   const THEME_KEY = 'quirama_theme_v1';
   const TWO_PI = Math.PI * 2;
   const POINTER_SCREEN_ANGLE = -Math.PI / 2;
 
   // =========================================================================
-  // 2. OPTION HELPERS (Dynamic Dates)
+  // 2. OPTION HELPERS (Dynamic Dates + Exclusive Manual Dates)
   // =========================================================================
   function deriveShortLabel(label) {
     const s = String(label || '').trim();
@@ -110,6 +149,13 @@
 
   function splitWheelText(label) {
     const clean = String(label || '').trim();
+    const crossMonth = clean.match(/^(\d+\s+de\s+[A-Za-zÁÉÍÓÚÑáéíóúñ]+)\s+y\s+(\d+\s+de\s+[A-Za-zÁÉÍÓÚÑáéíóúñ]+)$/i);
+    if (crossMonth) {
+      return {
+        wheelTop: (deriveShortLabel(crossMonth[1]) + ' y').slice(0, 14),
+        wheelBottom: deriveShortLabel(crossMonth[2]).toUpperCase().slice(0, 14)
+      };
+    }
     const deMatch = clean.match(/^(.+?)\s+de\s+([A-Za-zÁÉÍÓÚÑáéíóúñ]+.*)$/i);
     if (deMatch) {
       return {
@@ -142,20 +188,82 @@
       days: String(raw.days || '').trim() || '—',
       seasonTag: String(raw.seasonTag || '').trim() || 'Descanso',
       colorIndex,
-      wheelTop: parts.wheelTop,
-      wheelBottom: parts.wheelBottom,
+      wheelTop: String(raw.wheelTop || '').trim() || parts.wheelTop,
+      wheelBottom: raw.wheelBottom !== undefined ? String(raw.wheelBottom) : parts.wheelBottom,
       colorMain: pal.colorMain,
       colorLight: pal.colorLight,
       colorDark: pal.colorDark,
       pillBg: pal.pillBg,
       pillText: pal.pillText,
-      xlsxStyleIndex: pal.xlsxStyleIndex
+      xlsxStyleIndex: pal.xlsxStyleIndex,
+      exclusiveManual: Boolean(raw.exclusiveManual),
+      exclusiveEmpId: raw.exclusiveEmpId ? Number(raw.exclusiveEmpId) : null
     };
   }
 
+  const EXCLUSIVE_MANUAL_OPTIONS = EXCLUSIVE_MANUAL_OPTIONS_RAW.map((o, i) => normalizeOption(o, 5 + i));
+
   function getOptionById(optionId) {
+    if (optionId === undefined || optionId === null) return null;
     const key = String(optionId);
     return state.options.find(o => o.id === key) || null;
+  }
+
+  function getExclusiveOptionById(optionId) {
+    if (optionId === undefined || optionId === null) return null;
+    const key = String(optionId);
+    return EXCLUSIVE_MANUAL_OPTIONS.find(o => o.id === key) || null;
+  }
+
+  function getExclusiveOptionByLabel(label) {
+    const clean = String(label || '').trim().toLowerCase();
+    if (!clean) return null;
+    return EXCLUSIVE_MANUAL_OPTIONS.find(o => o.label.toLowerCase() === clean) || null;
+  }
+
+  function resolveAssignedOption(rec) {
+    if (!rec) return null;
+    const active = getOptionById(rec.optionId);
+    if (active) return active;
+    const exclById = getExclusiveOptionById(rec.optionId);
+    if (exclById) return exclById;
+    if (rec.optionLabel) {
+      const activeByLabel = state.options.find(o => o.label.toLowerCase() === String(rec.optionLabel).trim().toLowerCase());
+      if (activeByLabel) return activeByLabel;
+      const exclByLabel = getExclusiveOptionByLabel(rec.optionLabel);
+      if (exclByLabel) return exclByLabel;
+      return normalizeOption({
+        id: String(rec.optionId || 'manual_custom'),
+        label: rec.optionLabel,
+        days: rec.optionDays || '—',
+        seasonTag: 'Manual exclusivo',
+        colorIndex: 5,
+        exclusiveManual: true
+      }, 5);
+    }
+    return null;
+  }
+
+  function getExclusiveAssignedOptions() {
+    const activeIds = new Set(state.options.map(o => o.id));
+    const found = [];
+    const seenIds = new Set();
+    for (const rec of Object.values(state.assignments || {})) {
+      if (!rec) continue;
+      if (activeIds.has(String(rec.optionId))) continue;
+      const opt = resolveAssignedOption(rec);
+      if (opt && !seenIds.has(opt.id)) {
+        seenIds.add(opt.id);
+        found.push(opt);
+      }
+    }
+    return found;
+  }
+
+  function isPreRegisteredLocked(empId) {
+    const numId = Number(empId);
+    const rec = state.assignments[numId];
+    return Boolean((rec && rec.isPreRegistered) || PRE_REGISTERED_BY_ID[numId]);
   }
 
   function formatPct(prob) {
@@ -181,6 +289,56 @@
     return result;
   }
 
+  function buildPreRegisteredAssignments(options) {
+    const map = {};
+    const optById = {};
+    options.forEach(o => { optById[o.id] = o; });
+    EXCLUSIVE_MANUAL_OPTIONS.forEach(o => { optById[o.id] = o; });
+
+    PRE_REGISTERED_MANUAL_RAW.forEach(item => {
+      const opt = optById[item.optionId] || options.find(o => o.label.toLowerCase() === item.label.toLowerCase()) || getExclusiveOptionByLabel(item.label);
+      if (!opt) return;
+      map[item.empId] = {
+        optionId: opt.id,
+        optionLabel: opt.label,
+        optionDays: opt.days,
+        timestamp: PRE_REGISTERED_TIMESTAMP,
+        mode: 'manual',
+        isManual: true,
+        manualReason: item.reason,
+        isPreRegistered: true,
+        exclusiveManual: Boolean(item.exclusiveManual || opt.exclusiveManual),
+        spinCount: 0,
+        finalized: true
+      };
+    });
+    return map;
+  }
+
+  function buildPreRegisteredHistory(options) {
+    const optById = {};
+    options.forEach(o => { optById[o.id] = o; });
+    EXCLUSIVE_MANUAL_OPTIONS.forEach(o => { optById[o.id] = o; });
+
+    return PRE_REGISTERED_MANUAL_RAW.map((item, idx) => {
+      const opt = optById[item.optionId] || getExclusiveOptionByLabel(item.label);
+      return {
+        order: idx + 1,
+        empId: item.empId,
+        name: item.name,
+        area: item.area,
+        optionId: opt ? opt.id : item.optionId,
+        optionLabel: opt ? opt.label : item.label,
+        timestamp: PRE_REGISTERED_TIMESTAMP,
+        mode: 'manual',
+        isManual: true,
+        isPreRegistered: true,
+        manualReason: item.reason,
+        modeText: `Manual (sin ruleta) — ${item.reason}`
+      };
+    });
+  }
+
   // =========================================================================
   // 3. STATE, THEME & SYNC METADATA
   // =========================================================================
@@ -203,6 +361,7 @@
   let lastFlashedId = null;
   let lastSpinRecord = null;
   let draftDates = [];
+  let activeDecisionEmpId = null;
 
   let isSpinning = false;
   let wheelAngle = 0;
@@ -215,11 +374,12 @@
     return {
       employees: INITIAL_EMPLOYEES.map(e => ({ ...e })),
       options,
-      assignments: {},
-      history: [],
+      assignments: buildPreRegisteredAssignments(options),
+      pendingSpins: {},
+      history: buildPreRegisteredHistory(options),
       mode: 'area_balanced',
       equityVersion: EQUITY_SCHEMA_VERSION,
-      quotas: normalizeQuotas(null, options, INITIAL_EMPLOYEES.length),
+      quotas: normalizeQuotas(null, options, INITIAL_EMPLOYEES.length - EXCLUSIVE_MANUAL_OPTIONS.length),
       soundOn: true,
       autoDownload: false,
       nextEmpId: 45
@@ -238,11 +398,33 @@
       const normalizedAssignments = {};
       for (const [k, v] of Object.entries(parsed.assignments || {})) {
         if (v && v.optionId !== undefined && v.optionId !== null) {
+          const isPre = Boolean(v.isPreRegistered || PRE_REGISTERED_BY_ID[Number(k)]);
           normalizedAssignments[k] = {
             ...v,
             optionId: String(v.optionId),
-            isManual: Boolean(v.isManual || v.mode === 'manual'),
-            manualReason: String(v.manualReason || '')
+            isManual: Boolean(v.isManual || v.mode === 'manual' || isPre),
+            isPreRegistered: isPre,
+            exclusiveManual: Boolean(v.exclusiveManual || String(v.optionId) === 'manual_26_27_dic'),
+            manualReason: String(v.manualReason || ''),
+            spinCount: Number(v.spinCount || (v.isManual || v.mode === 'manual' ? 0 : 1)),
+            finalized: v.finalized !== false
+          };
+        }
+      }
+      // Ensure pre-registered exclusive assignment is always intact if missing
+      const preDefaults = buildPreRegisteredAssignments(opts);
+      for (const [empId, preRec] of Object.entries(preDefaults)) {
+        if (!normalizedAssignments[empId]) {
+          normalizedAssignments[empId] = preRec;
+        }
+      }
+      const normalizedPendingSpins = {};
+      for (const [k, v] of Object.entries(parsed.pendingSpins || {})) {
+        if (v && v.optionId !== undefined && v.optionId !== null && !normalizedAssignments[k]) {
+          normalizedPendingSpins[k] = {
+            ...v,
+            optionId: String(v.optionId),
+            spinCount: 1
           };
         }
       }
@@ -260,7 +442,8 @@
         equityVersion: EQUITY_SCHEMA_VERSION,
         options: opts,
         assignments: normalizedAssignments,
-        quotas: normalizeQuotas(parsed.quotas, opts, parsed.employees.length)
+        pendingSpins: normalizedPendingSpins,
+        quotas: normalizeQuotas(parsed.quotas, opts, Math.max(1, parsed.employees.length - EXCLUSIVE_MANUAL_OPTIONS.length))
       };
     } catch (_) {
       return defaultState();
@@ -334,34 +517,94 @@
     if (remote.employees.length > 0) state.employees = remote.employees;
 
     if (Array.isArray(remote.options) && remote.options.length >= 2) {
-      state.options = remote.options.map((o, i) => normalizeOption(o, i));
+      // Preserve our 6-date structure if a stale v2/v3 script only has old 4 options while local has 6
+      const remoteLooksStale4 = remoteVer < 4 && remote.options.length === 4 &&
+        remote.options.every((o, idx) => o && String(o.label || '').toLowerCase() === ['23 y 24 de diciembre', '25 y 26 de diciembre', '30 y 31 de diciembre', '01 y 02 de enero'][idx]);
+      if (!remoteLooksStale4) {
+        state.options = remote.options.map((o, i) => normalizeOption(o, i));
+      }
     }
 
     const prevAssignments = state.assignments || {};
+    const prevPendingSpins = state.pendingSpins || {};
     const nextAssignments = {};
+    const optByLabel = {};
+    state.options.forEach(o => { optByLabel[o.label.toLowerCase()] = o; });
+    EXCLUSIVE_MANUAL_OPTIONS.forEach(o => { optByLabel[o.label.toLowerCase()] = o; });
+
     for (const [empId, rec] of Object.entries(remote.assignments || {})) {
-      if (!rec || rec.optionId === undefined || rec.optionId === null) continue;
+      if (!rec || (rec.optionId === undefined && !rec.optionLabel)) continue;
+      const numId = Number(empId);
       const prev = prevAssignments[empId];
       const keepLocalManual = remoteVer < 2 && prev && prev.isManual && String(prev.optionId) === String(rec.optionId);
-      const isManual = Boolean(rec.isManual || rec.mode === 'manual' || keepLocalManual);
+      const isPre = Boolean(rec.isPreRegistered || PRE_REGISTERED_BY_ID[numId]);
+      const isManual = Boolean(rec.isManual || rec.mode === 'manual' || keepLocalManual || isPre);
+      let resolvedOptId = rec.optionId !== undefined && rec.optionId !== null ? String(rec.optionId) : '';
+      if (!getOptionById(resolvedOptId) && !getExclusiveOptionById(resolvedOptId) && rec.optionLabel) {
+        const matched = optByLabel[String(rec.optionLabel).trim().toLowerCase()];
+        if (matched) resolvedOptId = matched.id;
+      }
+      const sameAsPrev = prev && String(prev.optionId) === resolvedOptId;
+      const inferredSpinCount = rec.spinCount !== undefined
+        ? Number(rec.spinCount)
+        : (isManual ? 0 : (sameAsPrev && prev.spinCount ? Number(prev.spinCount) : 1));
+      const matchedOpt = getOptionById(resolvedOptId) || getExclusiveOptionById(resolvedOptId);
       nextAssignments[empId] = {
-        optionId: String(rec.optionId),
+        optionId: resolvedOptId,
+        optionLabel: rec.optionLabel || (matchedOpt ? matchedOpt.label : (sameAsPrev ? prev.optionLabel : '')),
+        optionDays: rec.optionDays || (matchedOpt ? matchedOpt.days : (sameAsPrev ? prev.optionDays : '')),
         timestamp: rec.timestamp || '',
         mode: isManual ? 'manual' : (rec.mode || state.mode || 'area_balanced'),
         isManual,
-        manualReason: String(rec.manualReason || (keepLocalManual ? prev.manualReason : '') || '')
+        isPreRegistered: isPre,
+        exclusiveManual: Boolean(rec.exclusiveManual || (matchedOpt && matchedOpt.exclusiveManual)),
+        manualReason: String(rec.manualReason || (keepLocalManual ? prev.manualReason : '') || (isPre && PRE_REGISTERED_BY_ID[numId] ? PRE_REGISTERED_BY_ID[numId].reason : '')),
+        spinCount: inferredSpinCount,
+        firstSpinLabel: String(rec.firstSpinLabel || (sameAsPrev && prev.firstSpinLabel ? prev.firstSpinLabel : '')),
+        finalized: true
       };
     }
-    // If remote is still v1, preserve local assignments made on newly added custom dates that v1 doesn't know yet
-    if (remoteVer < 2) {
-      const defaultIds = new Set(['0', '1', '2', '3']);
+
+    // For Apps Script < v4, preserve off-roulette exclusive manual assignments (e.g. Santiago 26-27 Dic)
+    // and any pre-registered dates that an older script could not match against its options list
+    if (remoteVer < 4) {
+      const preDefaults = buildPreRegisteredAssignments(state.options);
+      for (const [empId, preRec] of Object.entries(preDefaults)) {
+        if (!nextAssignments[empId]) {
+          nextAssignments[empId] = prevAssignments[empId] || preRec;
+        }
+      }
       for (const [empId, prev] of Object.entries(prevAssignments)) {
-        if (!nextAssignments[empId] && prev && !defaultIds.has(String(prev.optionId))) {
+        if (!nextAssignments[empId] && prev && prev.exclusiveManual) {
           nextAssignments[empId] = prev;
         }
       }
     }
     state.assignments = nextAssignments;
+
+    // Pending 1st spins awaiting user confirmation
+    const nextPendingSpins = {};
+    if (remoteVer >= 4 && remote.pendingSpins && typeof remote.pendingSpins === 'object') {
+      for (const [empId, pRec] of Object.entries(remote.pendingSpins)) {
+        if (!pRec || nextAssignments[empId]) continue;
+        nextPendingSpins[empId] = {
+          optionId: String(pRec.optionId),
+          optionLabel: pRec.optionLabel || '',
+          optionDays: pRec.optionDays || '',
+          timestamp: pRec.timestamp || '',
+          mode: pRec.mode || state.mode || 'area_balanced',
+          spinCount: 1
+        };
+      }
+    } else {
+      // Preserve local provisional 1st spins for anyone not yet finalized remotely
+      for (const [empId, pRec] of Object.entries(prevPendingSpins)) {
+        if (pRec && !nextAssignments[empId]) {
+          nextPendingSpins[empId] = pRec;
+        }
+      }
+    }
+    state.pendingSpins = nextPendingSpins;
 
     const prevManualByEmpOpt = new Map();
     if (remoteVer < 2) {
@@ -372,7 +615,11 @@
 
     state.history = Array.isArray(remote.history)
       ? remote.history.map(h => {
-          const optIdStr = h.optionId !== undefined && h.optionId !== null ? String(h.optionId) : null;
+          let optIdStr = h.optionId !== undefined && h.optionId !== null ? String(h.optionId) : null;
+          if (!optIdStr && h.optionLabel) {
+            const matched = optByLabel[String(h.optionLabel).trim().toLowerCase()];
+            if (matched) optIdStr = matched.id;
+          }
           let hManual = Boolean(h.isManual || h.mode === 'manual');
           let hReason = String(h.manualReason || '');
           if (!hManual && remoteVer < 2 && h.name && optIdStr) {
@@ -407,7 +654,8 @@
       state.mode = 'balanced';
     }
     if (remote.quotas) {
-      state.quotas = normalizeQuotas(remote.quotas, state.options, state.employees.length);
+      const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedOptions().length);
+      state.quotas = normalizeQuotas(remote.quotas, state.options, rouletteCount);
     }
     if (remote.nextEmpId) state.nextEmpId = Number(remote.nextEmpId);
     saveState();
@@ -586,7 +834,7 @@
     return val % maxExclusive;
   }
 
-  function getAssignedCountsMap(excludeEmpId = null) {
+  function getAssignedCountsMap(excludeEmpId = null, includePendingSpins = false) {
     const counts = {};
     state.options.forEach(o => { counts[o.id] = 0; });
     for (const [empIdStr, rec] of Object.entries(state.assignments)) {
@@ -595,18 +843,38 @@
         counts[String(rec.optionId)]++;
       }
     }
+    if (includePendingSpins) {
+      for (const [empIdStr, pRec] of Object.entries(state.pendingSpins || {})) {
+        if (state.assignments[empIdStr]) continue;
+        if (excludeEmpId !== null && Number(empIdStr) === Number(excludeEmpId)) continue;
+        if (pRec && counts[String(pRec.optionId)] !== undefined) {
+          counts[String(pRec.optionId)]++;
+        }
+      }
+    }
     return counts;
+  }
+
+  function hasPendingFirstSpin(empId) {
+    if (!empId) return false;
+    const numId = Number(empId);
+    return !state.assignments[numId] && Boolean(state.pendingSpins && state.pendingSpins[numId]);
   }
 
   function hasSpunRoulette(empId) {
     const numId = Number(empId);
     const emp = state.employees.find(e => e.id === numId);
     const rec = state.assignments[numId];
-    if (rec && !rec.isManual && rec.mode !== 'manual') return true;
+    if (rec && !rec.isManual && rec.mode !== 'manual' && rec.finalized !== false) return true;
     const activeIds = new Set(state.options.map(o => String(o.id)));
     const activeLabels = new Set(state.options.map(o => o.label.toLowerCase()));
     return state.history.some(h => {
       if (!h || h.isManual || h.mode === 'manual') return false;
+      const modeTxtLower = String(h.modeText || '').toLowerCase();
+      if (h.spinOutcome === 'provisional' || h.spinOutcome === 'discarded' ||
+          modeTxtLower.includes('por confirmar') || modeTxtLower.includes('descartado')) {
+        return false;
+      }
       const matchesEmp = (h.empId !== undefined && h.empId !== null && Number(h.empId) === numId) ||
         (emp && h.name && String(h.name).trim().toUpperCase() === String(emp.name).trim().toUpperCase());
       if (!matchesEmp) return false;
@@ -627,17 +895,21 @@
   let equityCacheKey = '';
   let equityCacheModel = null;
 
-  function buildEquityCacheKey() {
+  function buildEquityCacheKey(excludeEmpId = null) {
     const optPart = state.options.map(o => o.id).join(',');
     const empPart = state.employees.map(e => `${e.id}:${e.area}`).join('|');
     const asgPart = Object.keys(state.assignments)
       .sort()
       .map(k => `${k}=${state.assignments[k] ? state.assignments[k].optionId : ''}`)
       .join(',');
-    return `${optPart}#${empPart}#${asgPart}`;
+    const pendPart = Object.keys(state.pendingSpins || {})
+      .sort()
+      .map(k => `${k}=${state.pendingSpins[k] ? state.pendingSpins[k].optionId : ''}`)
+      .join(',');
+    return `${optPart}#${empPart}#${asgPart}#${pendPart}#${excludeEmpId === null ? '' : excludeEmpId}`;
   }
 
-  function waterFill(counts, pending) {
+  function waterFill(counts, pending, hardCap = null) {
     const k = counts.length;
     if (k === 0) {
       return { level: 0, baseNeed: [], extrasLeft: 0, eligibleForExtra: [], minAfterBase: [] };
@@ -651,9 +923,18 @@
         minAfterBase: counts.slice()
       };
     }
+    let capCapacity = 0;
+    if (hardCap !== null && Number.isFinite(hardCap)) {
+      for (let j = 0; j < k; j++) {
+        if (counts[j] < hardCap) capCapacity += (hardCap - counts[j]);
+      }
+    }
+    const useCap = hardCap !== null && Number.isFinite(hardCap) && capCapacity >= pending;
+
     let L = Math.min(...counts);
     while (true) {
       const nextL = L + 1;
+      if (useCap && nextL > hardCap) break;
       let needed = 0;
       for (let j = 0; j < k; j++) {
         if (counts[j] < nextL) needed += (nextL - counts[j]);
@@ -672,7 +953,7 @@
       baseNeed[j] = counts[j] < L ? (L - counts[j]) : 0;
       baseSum += baseNeed[j];
       minAfterBase[j] = counts[j] + baseNeed[j];
-      eligibleForExtra[j] = counts[j] <= L;
+      eligibleForExtra[j] = counts[j] <= L && (!useCap || (L + 1) <= hardCap);
     }
     const extrasLeft = pending - baseSum;
     return { level: L, baseNeed, extrasLeft, eligibleForExtra, minAfterBase };
@@ -768,10 +1049,19 @@
     return baseSqSum + addedCost;
   }
 
-  function computeEquityModel(options = state.options, employees = state.employees, assignments = state.assignments) {
-    const useCache = options === state.options && employees === state.employees && assignments === state.assignments;
+  function computeEquityModel(
+    options = state.options,
+    employees = state.employees,
+    assignments = state.assignments,
+    pendingSpins = state.pendingSpins,
+    excludeEmpId = null
+  ) {
+    const useCache = options === state.options &&
+      employees === state.employees &&
+      assignments === state.assignments &&
+      pendingSpins === state.pendingSpins;
     if (useCache) {
-      const key = buildEquityCacheKey();
+      const key = buildEquityCacheKey(excludeEmpId);
       if (key === equityCacheKey && equityCacheModel) return equityCacheModel;
       equityCacheKey = key;
     }
@@ -783,20 +1073,29 @@
     const areaList = [];
     const areaMap = {};
     const globalCounts = Array(k).fill(0);
+    let totalExclusiveAssigned = 0;
 
     for (const emp of employees) {
       const area = emp.area || 'General';
       if (!areaMap[area]) {
-        areaMap[area] = { area, total: 0, pending: 0, counts: Array(k).fill(0) };
+        areaMap[area] = { area, total: 0, exclusiveAssigned: 0, pending: 0, counts: Array(k).fill(0) };
         areaList.push(areaMap[area]);
       }
       const entry = areaMap[area];
       entry.total++;
-      const rec = assignments[emp.id];
-      const optIdx = rec && optIndexById[String(rec.optionId)] !== undefined ? optIndexById[String(rec.optionId)] : -1;
-      if (optIdx >= 0) {
-        entry.counts[optIdx]++;
-        globalCounts[optIdx]++;
+
+      const isExcluded = excludeEmpId !== null && Number(emp.id) === Number(excludeEmpId);
+      const rec = isExcluded ? null : (assignments[emp.id] || (pendingSpins && pendingSpins[emp.id]) || null);
+      if (rec) {
+        const optIdx = optIndexById[String(rec.optionId)] !== undefined ? optIndexById[String(rec.optionId)] : -1;
+        if (optIdx >= 0) {
+          entry.counts[optIdx]++;
+          globalCounts[optIdx]++;
+        } else {
+          // Fecha manual exclusiva fuera de la ruleta (ej. 26 y 27 de diciembre)
+          entry.exclusiveAssigned++;
+          totalExclusiveAssigned++;
+        }
       } else {
         entry.pending++;
       }
@@ -804,13 +1103,18 @@
 
     const minFinal = Array(k).fill(0);
     const areaStates = areaList.map(entry => {
-      const wf = waterFill(entry.counts, entry.pending);
+      const hardCap = AREA_HARD_CAPS[entry.area] !== undefined ? AREA_HARD_CAPS[entry.area] : null;
+      const wf = waterFill(entry.counts, entry.pending, hardCap);
       for (let j = 0; j < k; j++) minFinal[j] += wf.minAfterBase[j];
+      const rouletteTotal = Math.max(0, entry.total - entry.exclusiveAssigned);
+      const rawMaxTarget = Math.ceil(rouletteTotal / Math.max(1, k));
       return {
         ...entry,
+        rouletteTotal,
+        hardCap,
         wf,
-        minTarget: Math.floor(entry.total / Math.max(1, k)),
-        maxTarget: Math.ceil(entry.total / Math.max(1, k))
+        minTarget: Math.floor(rouletteTotal / Math.max(1, k)),
+        maxTarget: hardCap !== null ? Math.min(hardCap, Math.max(rawMaxTarget, ...entry.counts)) : rawMaxTarget
       };
     });
 
@@ -902,6 +1206,9 @@
       byArea[a.area] = {
         area: a.area,
         total: a.total,
+        rouletteTotal: a.rouletteTotal,
+        exclusiveAssigned: a.exclusiveAssigned,
+        hardCap: a.hardCap,
         pending: a.pending,
         minTarget: a.minTarget,
         maxTarget: a.maxTarget,
@@ -916,10 +1223,13 @@
     }
 
     const totalEmps = employees.length;
+    const rouletteTotalEmps = Math.max(0, totalEmps - totalExclusiveAssigned);
     const model = {
       totalEmps,
-      globalMinTarget: Math.floor(totalEmps / Math.max(1, k)),
-      globalMaxTarget: Math.ceil(totalEmps / Math.max(1, k)),
+      rouletteTotalEmps,
+      totalExclusiveAssigned,
+      globalMinTarget: Math.floor(rouletteTotalEmps / Math.max(1, k)),
+      globalMaxTarget: Math.ceil(rouletteTotalEmps / Math.max(1, k)),
       globalCountsById,
       globalMaxCapById,
       globalWeightsById,
@@ -987,15 +1297,18 @@
     });
   }
 
-  function getWheelSectors(forEmpId = null) {
+  function getWheelSectors(forEmpId = null, excludeEmpId = null) {
     const opts = state.options;
+    const effectiveExclude = excludeEmpId !== null
+      ? excludeEmpId
+      : (forEmpId !== null && hasPendingFirstSpin(forEmpId) ? Number(forEmpId) : null);
 
     if (state.mode === 'equal') {
       return buildEqualSectors(opts);
     }
 
     if (state.mode === 'area_balanced') {
-      const model = computeEquityModel();
+      const model = computeEquityModel(state.options, state.employees, state.assignments, state.pendingSpins, effectiveExclude);
       const emp = forEmpId !== null ? state.employees.find(e => e.id === Number(forEmpId)) : null;
       if (emp && model.byArea[emp.area] && model.byArea[emp.area].pending > 0) {
         return buildWeightedSectors(opts, model.byArea[emp.area].weightsById);
@@ -1004,7 +1317,7 @@
     }
 
     // Legacy 'balanced' mode (global custom quotas)
-    const counts = getAssignedCountsMap();
+    const counts = getAssignedCountsMap(effectiveExclude, true);
     const remaining = {};
     let totalRem = 0;
     opts.forEach(o => {
@@ -1018,12 +1331,15 @@
     return buildWeightedSectors(opts, remaining);
   }
 
-  function getOptionProbabilitiesMap(forEmpId = null) {
+  function getOptionProbabilitiesMap(forEmpId = null, excludeEmpId = null) {
     const probs = {};
     state.options.forEach(o => { probs[o.id] = 0; });
+    const effectiveExclude = excludeEmpId !== null
+      ? excludeEmpId
+      : (forEmpId !== null && hasPendingFirstSpin(forEmpId) ? Number(forEmpId) : null);
 
     if (state.mode === 'area_balanced') {
-      const model = computeEquityModel();
+      const model = computeEquityModel(state.options, state.employees, state.assignments, state.pendingSpins, effectiveExclude);
       const emp = forEmpId !== null ? state.employees.find(e => e.id === Number(forEmpId)) : null;
       if (emp && model.byArea[emp.area]) {
         const areaInfo = model.byArea[emp.area];
@@ -1036,7 +1352,7 @@
       }
     }
 
-    const sectors = getWheelSectors(forEmpId);
+    const sectors = getWheelSectors(forEmpId, effectiveExclude);
     for (const s of sectors) {
       probs[s.optionId] = (probs[s.optionId] || 0) + s.weight;
     }
@@ -1302,19 +1618,23 @@
     if (rec.isManual) {
       return rec.manualReason ? `Manual (sin ruleta) — ${rec.manualReason}` : 'Manual (sin ruleta)';
     }
+    if (rec.spinCount === 2) return 'Asignado (Tiro 2/2)';
+    if (rec.spinCount === 1) return 'Asignado (Tiro 1/2)';
     return 'Asignado';
   }
 
   function generateXlsxBytes() {
     const emps = state.employees;
     const opts = state.options;
+    const exclusiveOpts = getExclusiveAssignedOptions();
+    const summaryOpts = [...opts, ...exclusiveOpts];
     const totalEmps = emps.length;
     const assignedCount = Object.keys(state.assignments).length;
     const generatedAt = formatDateTimeEs(new Date().toISOString());
     const eqPct = formatPct(1 / Math.max(1, opts.length));
     const equityModel = computeEquityModel();
     const modeDesc = state.mode === 'area_balanced'
-      ? `Equitativo estricto por área y fecha (${formatRangeTarget(equityModel.globalMinTarget, equityModel.globalMaxTarget)} por fecha)`
+      ? `Equitativo estricto por área (A&B máx. 4/fecha · General ${formatRangeTarget(equityModel.globalMinTarget, equityModel.globalMaxTarget)}/fecha · Hasta 2 tiros)`
       : (state.mode === 'balanced'
           ? `Cupos globales (${opts.map(o => state.quotas[o.id] || 0).join(' / ')})`
           : `Azar libre (${eqPct} cada fecha)`);
@@ -1322,7 +1642,7 @@
     // Stylesheet indices:
     // 0: default | 1: title | 2: body left | 3: body center
     // 4..11: 8 curated date pill styles
-    // 12: pending pill | 13: subtitle | 14: table header | 15: total center | 16: total left | 17: percent
+    // 12: pending pill | 13: subtitle | 14: table header | 15: total center | 16: total left | 17: percent | 18: exclusive header
     const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <fonts count="12">
@@ -1339,7 +1659,7 @@
     <font><b/><sz val="10"/><color rgb="FF365314"/><name val="Calibri"/></font>
     <font><i/><sz val="10"/><color rgb="FF4B5563"/><name val="Calibri"/></font>
   </fonts>
-  <fills count="14">
+  <fills count="15">
     <fill><patternFill patternType="none"/></fill>
     <fill><patternFill patternType="gray125"/></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FF14532D"/></patternFill></fill>
@@ -1354,6 +1674,7 @@
     <fill><patternFill patternType="solid"><fgColor rgb="FFECFCCB"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFF3F4F6"/></patternFill></fill>
     <fill><patternFill patternType="solid"><fgColor rgb="FFECFDF5"/></patternFill></fill>
+    <fill><patternFill patternType="solid"><fgColor rgb="FF9A3412"/></patternFill></fill>
   </fills>
   <borders count="2">
     <border><left/><right/><top/><bottom/><diagonal/></border>
@@ -1366,7 +1687,7 @@
     </border>
   </borders>
   <cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
-  <cellXfs count="18">
+  <cellXfs count="19">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
     <xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
     <xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
@@ -1385,6 +1706,7 @@
     <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
     <xf numFmtId="0" fontId="3" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>
     <xf numFmtId="10" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>
+    <xf numFmtId="0" fontId="2" fillId="14" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
   </cellXfs>
   <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
@@ -1402,7 +1724,7 @@
     emps.forEach((emp, idx) => {
       const r = firstDataRow + idx;
       const rec = state.assignments[emp.id];
-      const opt = rec ? getOptionById(rec.optionId) : null;
+      const opt = rec ? resolveAssignedOption(rec) : null;
       const statusStyle = !opt ? 12 : (rec.isManual ? 6 : 4);
       s1Rows.push(
         `<row r="${r}" ht="20" customHeight="1">` +
@@ -1425,9 +1747,9 @@
     <col min="1" max="1" width="6" customWidth="1"/>
     <col min="2" max="2" width="28" customWidth="1"/>
     <col min="3" max="3" width="38" customWidth="1"/>
-    <col min="4" max="4" width="24" customWidth="1"/>
-    <col min="5" max="5" width="26" customWidth="1"/>
-    <col min="6" max="6" width="24" customWidth="1"/>
+    <col min="4" max="4" width="30" customWidth="1"/>
+    <col min="5" max="5" width="28" customWidth="1"/>
+    <col min="6" max="6" width="38" customWidth="1"/>
     <col min="7" max="7" width="23" customWidth="1"/>
   </cols>
   <sheetData>${s1Rows.join('')}</sheetData>
@@ -1435,17 +1757,21 @@
   <mergeCells count="2"><mergeCell ref="A1:G1"/><mergeCell ref="A2:G2"/></mergeCells>
 </worksheet>`;
 
-    // ---- SHEET 2: Dynamic Summary by Area ----
+    // ---- SHEET 2: Dynamic Summary by Area (6 roulette dates + exclusive manual dates if any) ----
     const areas = getUniqueAreas();
-    const s2Headers = ['Área', ...opts.map(o => o.label), 'Pendiente', 'Total'];
+    const exclusiveHeaderSet = new Set(exclusiveOpts.map(o => o.label));
+    const s2Headers = ['Área', ...summaryOpts.map(o => o.label), 'Pendiente', 'Total'];
     const totalCols = s2Headers.length;
     const lastColL = colLetter(totalCols - 1);
     const lastSumColL = colLetter(totalCols - 2);
+    const s2Subtitle = exclusiveOpts.length > 0
+      ? 'Fórmulas vinculadas a "Descansos Quirama" · A&B máx. 4/fecha en ruleta (columna naranja = fecha manual exclusiva fuera de ruleta)'
+      : 'Fórmulas vinculadas automáticamente a la hoja "Descansos Quirama"';
 
     const s2Rows = [
       `<row r="1" ht="28" customHeight="1">${cellStr('A1', 'RESUMEN DE DESCANSOS POR ÁREA Y FECHA — QUIRAMA 2026', 1)}</row>`,
-      `<row r="2" ht="20" customHeight="1">${cellStr('A2', 'Fórmulas vinculadas automáticamente a la hoja "Descansos Quirama"', 13)}</row>`,
-      `<row r="3" ht="26" customHeight="1">${s2Headers.map((h, i) => cellStr(colLetter(i) + '3', h, 14)).join('')}</row>`
+      `<row r="2" ht="20" customHeight="1">${cellStr('A2', s2Subtitle, 13)}</row>`,
+      `<row r="3" ht="28" customHeight="1">${s2Headers.map((h, i) => cellStr(colLetter(i) + '3', h, exclusiveHeaderSet.has(h) ? 18 : 14)).join('')}</row>`
     ];
 
     const areaStartRow = 4;
@@ -1457,7 +1783,12 @@
     areas.forEach((area, idx) => {
       const r = areaStartRow + idx;
       const areaEmps = emps.filter(e => e.area === area);
-      const vals = opts.map(o => areaEmps.filter(e => state.assignments[e.id]?.optionId === o.id).length);
+      const vals = summaryOpts.map(o => areaEmps.filter(e => {
+        const rec = state.assignments[e.id];
+        if (!rec) return false;
+        const resolved = resolveAssignedOption(rec);
+        return resolved && resolved.label.toLowerCase() === o.label.toLowerCase();
+      }).length);
       vals.push(areaEmps.filter(e => !state.assignments[e.id]).length);
       const ct = areaEmps.length;
       vals.forEach((v, k) => colTotals[k] += v);
@@ -1518,7 +1849,7 @@
     ];
     state.history.forEach((item, idx) => {
       const r = 3 + idx;
-      const opt = item.optionId !== null ? getOptionById(item.optionId) : null;
+      const opt = resolveAssignedOption({ optionId: item.optionId, optionLabel: item.optionLabel });
       const label = opt ? opt.label : (item.optionLabel || '—');
       const isMan = Boolean(item.isManual || item.mode === 'manual');
       const modeText = item.modeText || (isMan
@@ -1547,8 +1878,8 @@
     <col min="2" max="2" width="23" customWidth="1"/>
     <col min="3" max="3" width="38" customWidth="1"/>
     <col min="4" max="4" width="28" customWidth="1"/>
-    <col min="5" max="5" width="24" customWidth="1"/>
-    <col min="6" max="6" width="30" customWidth="1"/>
+    <col min="5" max="5" width="30" customWidth="1"/>
+    <col min="6" max="6" width="40" customWidth="1"/>
   </cols>
   <sheetData>${s3Rows.join('')}</sheetData>
   <mergeCells count="1"><mergeCell ref="A1:F1"/></mergeCells>
@@ -1622,7 +1953,7 @@
     const rows = [headers];
     state.employees.forEach((emp) => {
       const rec = state.assignments[emp.id];
-      const opt = rec ? getOptionById(rec.optionId) : null;
+      const opt = rec ? resolveAssignedOption(rec) : null;
       rows.push([
         String(emp.id),
         emp.area,
@@ -1666,7 +1997,7 @@
     const lines = [headers.join('\t')];
     state.employees.forEach((emp) => {
       const rec = state.assignments[emp.id];
-      const opt = rec ? getOptionById(rec.optionId) : null;
+      const opt = rec ? resolveAssignedOption(rec) : null;
       lines.push([
         emp.id,
         emp.area,
@@ -1908,7 +2239,7 @@
   }
 
   // =========================================================================
-  // 9. SPIN & MANUAL ASSIGNMENT ORCHESTRATION
+  // 9. SPIN (UP TO 2 SPINS WITH CONFIRMATION) & MANUAL ASSIGNMENT ORCHESTRATION
   // =========================================================================
   async function spinWheel() {
     if (isSpinning) return;
@@ -1918,13 +2249,16 @@
       return;
     }
 
+    if (hasPendingFirstSpin(emp.id)) {
+      openSpinDecisionModal(emp.id);
+      return;
+    }
+
     if (!canSpinRoulette(emp.id)) {
-      showToast(
-        hasSpunRoulette(emp.id)
-          ? `🔒 ${emp.name} ya tiró la ruleta. Solo se permite 1 giro por persona.`
-          : `🔒 ${emp.name} ya tiene fecha de descanso asignada. Solo se permite 1 turno por persona.`,
-        '🔒'
-      );
+      const msg = isPreRegisteredLocked(emp.id)
+        ? `🔒 ${emp.name} tiene su descanso manual pre-registrado y bloqueado.`
+        : `🔒 ${emp.name} ya completó su turno definitivo en la ruleta (máx. ${MAX_SPINS_PER_PERSON} tiros).`;
+      showToast(msg, '🔒');
       return;
     }
 
@@ -1937,26 +2271,31 @@
       emp = state.employees.find(e => e.id === selectedPersonId);
       updateSpinButtons();
       if (!emp) return;
+      if (hasPendingFirstSpin(emp.id)) {
+        openSpinDecisionModal(emp.id);
+        return;
+      }
       if (!canSpinRoulette(emp.id)) {
-        const existingOpt = state.assignments[emp.id] ? getOptionById(state.assignments[emp.id].optionId) : null;
+        const existingOpt = state.assignments[emp.id] ? resolveAssignedOption(state.assignments[emp.id]) : null;
         showToast(
-          `🔒 ${emp.name} ya tiró la ruleta desde otro dispositivo${existingOpt ? ' (' + existingOpt.shortLabel + ')' : ''}. Solo se permite 1 giro por persona.`,
+          `🔒 ${emp.name} ya completó su turno desde otro dispositivo${existingOpt ? ' (' + existingOpt.shortLabel + ')' : ''}.`,
           '🔒'
         );
         return;
       }
     }
 
-    executeSpin(emp);
+    executeSpin(emp, { spinNumber: 1, firstSpinOption: null });
   }
 
-  function executeSpin(emp) {
+  function executeSpin(emp, { spinNumber = 1, firstSpinOption = null } = {}) {
     ensureAudio();
     isSpinning = true;
     document.getElementById('resultBanner').classList.add('hidden');
     updateSpinButtons();
 
-    const sectors = getWheelSectors(emp.id);
+    const excludeEmpId = spinNumber === 2 ? emp.id : null;
+    const sectors = getWheelSectors(emp.id, excludeEmpId);
     const winningSector = pickWinningSector(sectors);
 
     const u = 0.18 + cryptoRandomFloat() * 0.64;
@@ -1973,6 +2312,7 @@
 
     let lastSectorIdx = getSectorAtWheelAngle(wheelAngle, sectors).index;
     const liveTicker = document.getElementById('liveTicker');
+    liveTicker.innerHTML = `<span>Girando tiro ${spinNumber} de ${MAX_SPINS_PER_PERSON}...</span>`;
 
     function animate(now) {
       const elapsed = now - startTime;
@@ -2003,32 +2343,292 @@
         wheelAngle = normalizeAngle(startAngle + totalDelta);
         pointerDeflection = 0;
         drawWheel(sectors);
-        commitAssignment(emp, winningSector.option, { forceOverwrite: false, isManual: false, manualReason: '' });
+        if (spinNumber === 1) {
+          handleFirstSpinResult(emp, winningSector.option);
+        } else {
+          const pendingRec = state.pendingSpins && state.pendingSpins[emp.id];
+          commitAssignment(emp, winningSector.option, {
+            forceOverwrite: false,
+            isManual: false,
+            manualReason: '',
+            spinNumber: 2,
+            firstSpinOption: firstSpinOption || (pendingRec ? resolveAssignedOption(pendingRec) : null),
+            firstSpinTimestamp: pendingRec ? pendingRec.timestamp : ''
+          });
+        }
       }
     }
 
     requestAnimationFrame(animate);
   }
 
-  async function commitAssignment(emp, option, { forceOverwrite = false, isManual = false, manualReason = '' } = {}) {
+  async function handleFirstSpinResult(emp, option) {
     isSpinning = false;
     const nowIso = new Date().toISOString();
-    const prevAssignment = state.assignments[emp.id] ? { ...state.assignments[emp.id] } : null;
 
-    // Hard safeguard: never overwrite an existing spin unless explicitly manual
-    if (!isManual && !canSpinRoulette(emp.id)) {
-      renderAll();
-      showToast(`🔒 ${emp.name} ya tiró la ruleta. Solo se permite 1 giro por persona.`, '🔒');
+    playWinChime();
+    launchConfetti(option.colorMain);
+
+    if (!state.pendingSpins) state.pendingSpins = {};
+    state.pendingSpins[emp.id] = {
+      optionId: option.id,
+      optionLabel: option.label,
+      optionDays: option.days,
+      timestamp: nowIso,
+      mode: state.mode,
+      spinCount: 1
+    };
+    saveState();
+
+    document.getElementById('liveTicker').innerHTML =
+      `<span class="date-dot" style="background:${option.colorMain};"></span><strong style="color:var(--text);">1.er tiro: ${xmlEscape(option.label)} · Esperando confirmación</strong>`;
+
+    // If Apps Script v4 is active, reserve the provisional 1st spin atomically in Google Drive
+    if (syncUrl && remoteScriptVersion >= 4) {
+      const res = await postToDrive({
+        action: 'recordSpin',
+        empId: emp.id,
+        optionId: option.id,
+        optionLabel: option.label,
+        optionDays: option.days,
+        optionBg: option.pillBg,
+        optionFg: option.pillText,
+        colorIndex: option.colorIndex,
+        mode: state.mode,
+        isManual: false,
+        spinNumber: 1,
+        provisional: true
+      });
+      if (res && res.quotaConflict) {
+        delete state.pendingSpins[emp.id];
+        saveState();
+        document.getElementById('liveTicker').textContent = 'Cupo actualizado · Gira nuevamente';
+        renderAll();
+        showToast(res.error || '⚠️ Esa fecha acaba de completar su cupo equitativo en otro dispositivo. Gira nuevamente.', '⚠️');
+        return;
+      }
+      if (res && res.conflict) {
+        delete state.pendingSpins[emp.id];
+        saveState();
+        renderAll();
+        showToast(res.error || `🔒 ${emp.name} ya completó su turno en otro dispositivo.`, '🔒');
+        return;
+      }
+    }
+
+    renderAll();
+    openSpinDecisionModal(emp.id);
+  }
+
+  function openSpinDecisionModal(empId) {
+    const emp = state.employees.find(e => e.id === Number(empId));
+    const pending = state.pendingSpins && state.pendingSpins[Number(empId)];
+    if (!emp || !pending) return;
+    const opt = resolveAssignedOption(pending);
+    if (!opt) return;
+
+    activeDecisionEmpId = emp.id;
+    selectedPersonId = emp.id;
+
+    document.getElementById('decisionPersonName').textContent = emp.name;
+    document.getElementById('decisionPersonArea').textContent = emp.area;
+
+    const card = document.getElementById('decisionDateCard');
+    card.style.background = opt.pillBg;
+    card.style.borderColor = opt.colorMain;
+    card.style.color = opt.pillText;
+    document.getElementById('decisionDateDot').style.background = opt.colorMain;
+    document.getElementById('decisionDateLabel').textContent = opt.label;
+    document.getElementById('decisionDateDays').textContent = opt.days;
+
+    // Check if only 1 option remains available for this area on a potential 2nd spin
+    const probsSecond = getOptionProbabilitiesMap(emp.id, emp.id);
+    const availableCount = state.options.filter(o => (probsSecond[o.id] || 0) > 1e-6).length;
+    const singleHint = document.getElementById('decisionSingleOptionHint');
+    if (availableCount <= 1) {
+      singleHint.textContent = `Nota: actualmente solo queda esta fecha con cupo disponible para ${emp.area}, por lo que un 2.º tiro volvería a caer en la misma fecha.`;
+      singleHint.classList.remove('hidden');
+    } else {
+      singleHint.classList.add('hidden');
+    }
+
+    const btnKeep = document.getElementById('btnKeepFirstSpin');
+    const btnSecond = document.getElementById('btnTakeSecondSpin');
+    btnKeep.disabled = false;
+    btnSecond.disabled = false;
+    btnKeep.querySelector('span').textContent = '✓ Conservar esta fecha (Definitivo)';
+    btnSecond.querySelector('span').textContent = '↻ Girar 2.ª y última vez';
+
+    openModal('modalSpinDecision');
+  }
+
+  async function confirmKeepFirstSpin() {
+    const empId = activeDecisionEmpId || selectedPersonId;
+    const emp = state.employees.find(e => e.id === Number(empId));
+    const pending = state.pendingSpins && state.pendingSpins[Number(empId)];
+    if (!emp || !pending) {
+      closeModal('modalSpinDecision');
+      return;
+    }
+    const opt = resolveAssignedOption(pending);
+    if (!opt) {
+      closeModal('modalSpinDecision');
       return;
     }
 
+    const btnKeep = document.getElementById('btnKeepFirstSpin');
+    const btnSecond = document.getElementById('btnTakeSecondSpin');
+    btnKeep.disabled = true;
+    btnSecond.disabled = true;
+    btnKeep.querySelector('span').textContent = 'Confirmando...';
+
+    // When connected to Apps Script < v4, re-check latest remote state & quota before committing
+    if (syncUrl && remoteScriptVersion < 4) {
+      await syncFromDrive({ silent: true });
+      if (state.assignments[emp.id]) {
+        delete state.pendingSpins[emp.id];
+        saveState();
+        activeDecisionEmpId = null;
+        closeModal('modalSpinDecision');
+        renderAll();
+        showToast(`🔒 ${emp.name} ya fue confirmado desde otro dispositivo.`, '🔒');
+        return;
+      }
+      if (state.mode === 'area_balanced') {
+        const eqModel = computeEquityModel(state.options, state.employees, state.assignments, state.pendingSpins, emp.id);
+        const areaObj = eqModel.byArea[emp.area];
+        if (areaObj && areaObj.pending > 0 && (areaObj.weightsById[opt.id] || 0) <= 1e-9) {
+          delete state.pendingSpins[emp.id];
+          saveState();
+          activeDecisionEmpId = null;
+          closeModal('modalSpinDecision');
+          renderAll();
+          showToast('⚠️ Mientras decidías, esa fecha completó su cupo equitativo en otro dispositivo. Gira nuevamente.', '⚠️');
+          return;
+        }
+      }
+    }
+
+    activeDecisionEmpId = null;
+    closeModal('modalSpinDecision');
+
+    await commitAssignment(emp, opt, {
+      forceOverwrite: false,
+      isManual: false,
+      manualReason: '',
+      spinNumber: 1,
+      confirmProvisional: true,
+      firstSpinTimestamp: pending.timestamp
+    });
+  }
+
+  async function startSecondAndFinalSpin() {
+    const empId = activeDecisionEmpId || selectedPersonId;
+    const emp = state.employees.find(e => e.id === Number(empId));
+    const pending = state.pendingSpins && state.pendingSpins[Number(empId)];
+    if (!emp || !pending) {
+      closeModal('modalSpinDecision');
+      return;
+    }
+    const firstSpinOption = resolveAssignedOption(pending);
+
+    activeDecisionEmpId = null;
+    closeModal('modalSpinDecision');
+
+    if (syncUrl) {
+      isSpinning = true;
+      updateSpinButtons();
+      document.getElementById('btnSpinText').textContent = 'Preparando 2.º tiro...';
+      await syncFromDrive({ silent: true });
+      isSpinning = false;
+      updateSpinButtons();
+      if (state.assignments[emp.id]) {
+        delete state.pendingSpins[emp.id];
+        saveState();
+        renderAll();
+        showToast(`🔒 ${emp.name} ya completó su turno en otro dispositivo.`, '🔒');
+        return;
+      }
+    }
+
+    executeSpin(emp, { spinNumber: 2, firstSpinOption });
+  }
+
+  async function commitAssignment(
+    emp,
+    option,
+    {
+      forceOverwrite = false,
+      isManual = false,
+      manualReason = '',
+      spinNumber = 1,
+      confirmProvisional = false,
+      firstSpinOption = null,
+      firstSpinTimestamp = ''
+    } = {}
+  ) {
+    isSpinning = false;
+    const nowIso = new Date().toISOString();
+    const prevAssignment = state.assignments[emp.id] ? { ...state.assignments[emp.id] } : null;
+    const prevPending = state.pendingSpins && state.pendingSpins[emp.id] ? { ...state.pendingSpins[emp.id] } : null;
+
+    // Hard safeguard: never overwrite an already finalized turn unless explicitly manual
+    if (!isManual && !canSpinRoulette(emp.id)) {
+      renderAll();
+      showToast(`🔒 ${emp.name} ya completó su turno definitivo (máx. ${MAX_SPINS_PER_PERSON} tiros).`, '🔒');
+      return;
+    }
+
+    const wasPreRegistered = Boolean(isManual && (prevAssignment && prevAssignment.isPreRegistered || PRE_REGISTERED_BY_ID[emp.id]));
+    const modeDescBase = state.mode === 'area_balanced'
+      ? 'Equitativo por área y fecha'
+      : (state.mode === 'balanced' ? 'Cupos globales' : 'Azar libre');
+
     state.assignments[emp.id] = {
       optionId: option.id,
+      optionLabel: option.label,
+      optionDays: option.days,
       timestamp: nowIso,
       mode: isManual ? 'manual' : state.mode,
       isManual: Boolean(isManual),
-      manualReason: String(manualReason || '').trim()
+      isPreRegistered: wasPreRegistered,
+      exclusiveManual: Boolean(option.exclusiveManual),
+      manualReason: String(manualReason || '').trim(),
+      spinCount: isManual ? 0 : spinNumber,
+      firstSpinOptionId: !isManual && spinNumber === 2 && firstSpinOption ? firstSpinOption.id : '',
+      firstSpinLabel: !isManual && spinNumber === 2 && firstSpinOption ? firstSpinOption.label : '',
+      finalized: true
     };
+    if (state.pendingSpins && state.pendingSpins[emp.id]) {
+      delete state.pendingSpins[emp.id];
+    }
+
+    const addedHistoryOrders = [];
+    if (!isManual && spinNumber === 2 && firstSpinOption) {
+      const discardedItem = {
+        order: state.history.length + 1,
+        empId: emp.id,
+        name: emp.name,
+        area: emp.area,
+        optionId: firstSpinOption.id,
+        optionLabel: firstSpinOption.label,
+        timestamp: firstSpinTimestamp || nowIso,
+        mode: state.mode,
+        isManual: false,
+        spinNumber: 1,
+        spinOutcome: 'discarded',
+        modeText: `${modeDescBase} · Tiro 1/2 (Descartado)`
+      };
+      state.history.push(discardedItem);
+      addedHistoryOrders.push(discardedItem.order);
+    }
+
+    const histModeText = isManual
+      ? (manualReason ? `Manual (sin ruleta) — ${String(manualReason).trim()}` : 'Manual (sin ruleta)')
+      : (spinNumber === 2
+          ? `${modeDescBase} · Tiro 2/2 (Definitivo)`
+          : `${modeDescBase} · Tiro 1/2 (Conservado)`);
+
     const histItem = {
       order: state.history.length + 1,
       empId: emp.id,
@@ -2039,18 +2639,22 @@
       timestamp: nowIso,
       mode: isManual ? 'manual' : state.mode,
       isManual: Boolean(isManual),
-      manualReason: String(manualReason || '').trim()
+      manualReason: String(manualReason || '').trim(),
+      spinNumber: isManual ? 0 : spinNumber,
+      spinOutcome: isManual ? 'manual' : (spinNumber === 2 ? 'second_final' : 'kept'),
+      modeText: histModeText
     };
     state.history.push(histItem);
+    addedHistoryOrders.push(histItem.order);
     saveState();
 
-    const canUndoManual = Boolean(isManual && (!prevAssignment || prevAssignment.isManual));
+    const canUndoManual = Boolean(isManual && !wasPreRegistered && (!prevAssignment || prevAssignment.isManual));
     lastFlashedId = emp.id;
     lastSpinRecord = canUndoManual ? { empId: emp.id, prevAssignment, histOrder: histItem.order, isManual: true } : null;
 
     if (isManual) {
       playManualAlertTone();
-    } else {
+    } else if (!confirmProvisional) {
       playWinChime();
       launchConfetti(option.colorMain);
     }
@@ -2058,7 +2662,9 @@
     let finalOption = option;
     let savedMsg = isManual
       ? '⚠️ ASIGNACIÓN MANUAL — No se giró la ruleta (guardado en el registro)'
-      : 'Guardado automáticamente en el registro Excel (giro único registrado)';
+      : (spinNumber === 2
+          ? `Resultado definitivo del 2.º y último tiro${firstSpinOption ? ' (reemplazó a ' + firstSpinOption.shortLabel + ')' : ''} — Turno bloqueado`
+          : 'Fecha conservada en el 1.er tiro (definitivo) — Turno bloqueado');
 
     const banner = document.getElementById('resultBanner');
     banner.classList.toggle('manual', Boolean(isManual));
@@ -2067,29 +2673,47 @@
     if (syncUrl) {
       document.getElementById('resultSavedNote').textContent = isManual
         ? '⚠️ Guardando asignación manual (sin ruleta) en Google Drive...'
-        : 'Guardando en Google Drive...';
+        : 'Guardando resultado definitivo en Google Drive...';
       banner.classList.remove('hidden');
 
-      const res = await postToDrive({
-        action: 'recordSpin',
-        empId: emp.id,
-        optionId: option.id,
-        optionLabel: option.label,
-        optionDays: option.days,
-        optionBg: option.pillBg,
-        optionFg: option.pillText,
-        colorIndex: option.colorIndex,
-        mode: isManual ? 'manual' : state.mode,
-        isManual: Boolean(isManual),
-        manualReason: String(manualReason || '').trim(),
-        forceOverwrite: Boolean(isManual && forceOverwrite)
-      });
+      let res;
+      if (!isManual && confirmProvisional && remoteScriptVersion >= 4) {
+        res = await postToDrive({
+          action: 'confirmSpin',
+          empId: emp.id,
+          optionId: option.id,
+          optionLabel: option.label
+        });
+      } else {
+        res = await postToDrive({
+          action: 'recordSpin',
+          empId: emp.id,
+          optionId: option.id,
+          optionLabel: option.label,
+          optionDays: option.days,
+          optionBg: option.pillBg,
+          optionFg: option.pillText,
+          colorIndex: option.colorIndex,
+          mode: isManual ? 'manual' : state.mode,
+          isManual: Boolean(isManual),
+          manualReason: String(manualReason || '').trim(),
+          forceOverwrite: Boolean(isManual && forceOverwrite),
+          spinNumber: isManual ? 0 : spinNumber,
+          provisional: false,
+          firstSpinOptionId: !isManual && spinNumber === 2 && firstSpinOption ? firstSpinOption.id : '',
+          firstSpinLabel: !isManual && spinNumber === 2 && firstSpinOption ? firstSpinOption.label : '',
+          firstSpinTimestamp: firstSpinTimestamp || ''
+        });
+      }
 
       if (res && res.quotaConflict) {
         if (!res.state) {
           if (prevAssignment) state.assignments[emp.id] = prevAssignment;
           else delete state.assignments[emp.id];
-          state.history = state.history.filter(h => h.order !== histItem.order);
+          if (prevPending && spinNumber === 2) {
+            state.pendingSpins[emp.id] = prevPending;
+          }
+          state.history = state.history.filter(h => !addedHistoryOrders.includes(h.order));
           saveState();
         }
         banner.classList.add('hidden');
@@ -2100,15 +2724,17 @@
       } else if (res && res.conflict) {
         const remoteRec = state.assignments[emp.id];
         finalOption = getOptionById(res.existingOptionId)
-          || (remoteRec && getOptionById(remoteRec.optionId))
+          || (remoteRec && resolveAssignedOption(remoteRec))
           || (res.existingOptionLabel && state.options.find(o => o.label.toLowerCase() === String(res.existingOptionLabel).toLowerCase()))
           || option;
-        savedMsg = '🔒 Esta persona ya había girado la ruleta (máx. 1 giro) — se conservó su resultado original en Drive';
-        showToast(`🔒 ${emp.name} ya había tirado la ruleta (${finalOption.shortLabel}). Solo 1 giro por persona.`, '🔒');
+        savedMsg = '🔒 Esta persona ya tenía su turno definitivo en Drive — se conservó su resultado original';
+        showToast(`🔒 ${emp.name} ya completó su turno (${finalOption.shortLabel}).`, '🔒');
       } else if (res && res.ok) {
         savedMsg = isManual
           ? '⚠️ ASIGNACIÓN MANUAL (sin girar la ruleta) — Guardado en Google Drive'
-          : 'Guardado y sincronizado en vivo en Google Drive (giro único bloqueado)';
+          : (spinNumber === 2
+              ? `✓ 2.º tiro definitivo guardado en Drive${firstSpinOption ? ' (reemplazó a ' + firstSpinOption.shortLabel + ')' : ''} · Bloqueado`
+              : '✓ 1.er tiro conservado y guardado en Google Drive · Turno bloqueado');
       } else if (res && res.error && String(res.error).includes('inválida')) {
         savedMsg = isManual
           ? '⚠️ ASIGNACIÓN MANUAL (sin ruleta) — Guardado localmente (actualiza Code.gs para sincronizar nuevas fechas)'
@@ -2116,7 +2742,7 @@
         showToast('Actualiza Code.gs en Apps Script para guardar fechas nuevas en Drive.', 'ℹ');
       } else {
         savedMsg = isManual
-          ? '⚠️ ASIGNACIÓN MANUAL (sin girar la ruleta) — Guardado localmente'
+          ? '⚠️ ASIGNACIÓN MANUAL (sin ruleta) — Guardado localmente'
           : 'Guardado localmente (pendiente sincronizar con Drive)';
         showToast('Sin conexión con Drive. Guardado localmente.', '!');
       }
@@ -2134,7 +2760,9 @@
     document.getElementById('resultSavedNote').textContent = savedMsg;
     document.getElementById('resultWinnerName').textContent = `${emp.name} · ${emp.area}`;
     const pill = document.getElementById('resultDatePill');
-    pill.textContent = isManual ? `Manual: ${finalOption.label}` : `Descanso: ${finalOption.label}`;
+    pill.textContent = isManual
+      ? `Manual: ${finalOption.label}`
+      : `Definitivo (Tiro ${spinNumber}/${MAX_SPINS_PER_PERSON}): ${finalOption.label}`;
     pill.style.background = finalOption.pillBg;
     pill.style.color = finalOption.pillText;
     const reasonSuffix = isManual && manualReason ? ` · Motivo: ${manualReason}` : '';
@@ -2143,7 +2771,7 @@
 
     document.getElementById('liveTicker').innerHTML = isManual
       ? `<span class="manual-badge">⚠️ Manual (sin ruleta)</span><strong style="color:var(--text);">${xmlEscape(finalOption.label)}</strong>`
-      : `<span class="date-dot" style="background:${finalOption.colorMain};"></span><strong style="color:var(--text);">Resultado: ${xmlEscape(finalOption.label)}</strong>`;
+      : `<span class="date-dot" style="background:${finalOption.colorMain};"></span><strong style="color:var(--text);">Definitivo (Tiro ${spinNumber}/${MAX_SPINS_PER_PERSON}): ${xmlEscape(finalOption.label)}</strong>`;
 
     renderAll();
   }
@@ -2160,24 +2788,53 @@
     document.getElementById('manualPersonArea').textContent = emp.area;
 
     const currentRec = state.assignments[emp.id];
-    const currentOptId = currentRec ? currentRec.optionId : state.options[0].id;
+    const currentOpt = currentRec ? resolveAssignedOption(currentRec) : null;
+    const currentOptId = currentOpt ? currentOpt.id : state.options[0].id;
     document.getElementById('manualReasonInput').value = currentRec && currentRec.manualReason ? currentRec.manualReason : '';
 
     const eqModel = computeEquityModel();
     const areaInfo = eqModel.byArea[emp.area];
 
+    // Exclusive manual option is ONLY shown for its designated person (Santiago García Carmona)
+    const modalOptions = [];
+    EXCLUSIVE_MANUAL_OPTIONS.forEach(exOpt => {
+      if (exOpt.exclusiveEmpId === emp.id || (currentOpt && currentOpt.id === exOpt.id)) {
+        modalOptions.push(exOpt);
+      }
+    });
+    modalOptions.push(...state.options);
+
     const listEl = document.getElementById('manualOptionsList');
-    listEl.innerHTML = state.options.map((opt) => {
+    listEl.innerHTML = modalOptions.map((opt) => {
+      if (opt.exclusiveManual) {
+        return `
+        <label class="manual-option-item">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+            <input type="radio" name="manualDateOption" value="${xmlEscape(opt.id)}" ${opt.id === currentOptId ? 'checked' : ''} />
+            <span class="date-dot" style="background:${opt.colorMain};"></span>
+            <div style="min-width:0;">
+              <strong style="font-size:13px;display:block;">${xmlEscape(opt.label)}</strong>
+              <span style="font-size:11.5px;color:var(--text-muted);display:block;">${xmlEscape(opt.days)}</span>
+              <span class="manual-quota-hint"><span class="exclusive-badge">Fecha manual exclusiva · NO aparece en la ruleta</span></span>
+            </div>
+          </div>
+          <span class="pill" style="background:${opt.pillBg};color:${opt.pillText};">${xmlEscape(opt.shortLabel)}</span>
+        </label>`;
+      }
+
       const gCount = eqModel.globalCountsById[opt.id] || 0;
       const gCap = eqModel.globalMaxCapById[opt.id] || eqModel.globalMaxTarget;
       const aCount = areaInfo ? (areaInfo.countsById[opt.id] || 0) : 0;
       const aMaxTarget = areaInfo ? areaInfo.maxTarget : 0;
       const isAlreadyThisOpt = currentRec && String(currentRec.optionId) === String(opt.id);
       const wouldExceedArea = areaInfo && !isAlreadyThisOpt && (aCount + 1 > aMaxTarget);
-      const wouldExceedGlobal = !isAlreadyThisOpt && (gCount + 1 > eqModel.globalMaxTarget);
+      const wouldExceedGlobal = !isAlreadyThisOpt && (gCount + 1 > gCap);
       const quotaHint = `${emp.area}: ${aCount}/${aMaxTarget} · General: ${gCount}/${gCap}`;
+      const warnLabel = emp.area === 'A&B' && wouldExceedArea
+        ? '⚠️ Supera máximo estricto de 4 en A&B'
+        : '⚠️ Supera cupo equitativo';
       const warnTag = (wouldExceedArea || wouldExceedGlobal)
-        ? `<span class="manual-quota-warn">⚠️ Supera cupo equitativo</span>`
+        ? `<span class="manual-quota-warn">${warnLabel}</span>`
         : '';
 
       return `
@@ -2224,13 +2881,14 @@
     const warnEl = document.getElementById('manageDatesWarning');
 
     const k = Math.max(1, draftDates.length);
-    const totalEmps = state.employees.length;
+    const eqModel = computeEquityModel();
+    const rouletteEmps = eqModel.rouletteTotalEmps;
     const eqPct = formatPct(1 / k);
-    const abCount = state.employees.filter(e => e.area === 'A&B').length;
-    const globalRange = formatRangeTarget(Math.floor(totalEmps / k), Math.ceil(totalEmps / k));
-    const abRange = formatRangeTarget(Math.floor(abCount / k), Math.ceil(abCount / k));
+    const abRouletteCount = eqModel.byArea['A&B'] ? eqModel.byArea['A&B'].rouletteTotal : state.employees.filter(e => e.area === 'A&B').length;
+    const globalRange = formatRangeTarget(Math.floor(rouletteEmps / k), Math.ceil(rouletteEmps / k));
+    const abRange = formatRangeTarget(Math.floor(abRouletteCount / k), Math.min(AREA_HARD_CAPS['A&B'] || 999, Math.ceil(abRouletteCount / k)));
     previewEl.textContent = state.mode === 'area_balanced'
-      ? `${draftDates.length} fechas activas · Reparto equitativo: ${globalRange} personas/fecha (A&B: ${abRange}/fecha)`
+      ? `${draftDates.length} fechas activas · Reparto equitativo: ${globalRange} personas/fecha (A&B: máx. ${abRange}/fecha)`
       : `${draftDates.length} fechas activas · Probabilidad base: ${eqPct} cada una`;
 
     // Check if any originally assigned option was deleted in draft
@@ -2328,14 +2986,20 @@
       }
     });
 
-    // Apply locally
+    // Apply locally (preserve exclusive manual assignments like 26 y 27 de diciembre)
     state.options = cleaned;
     for (const [empId, rec] of Object.entries(state.assignments)) {
-      if (!nextIds.has(String(rec.optionId))) {
+      if (!nextIds.has(String(rec.optionId)) && !rec.exclusiveManual) {
         delete state.assignments[empId];
       }
     }
-    state.quotas = normalizeQuotas(state.quotas, state.options, state.employees.length);
+    for (const [empId, pRec] of Object.entries(state.pendingSpins || {})) {
+      if (!nextIds.has(String(pRec.optionId))) {
+        delete state.pendingSpins[empId];
+      }
+    }
+    const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedOptions().length);
+    state.quotas = normalizeQuotas(state.quotas, state.options, rouletteCount);
     saveState();
     closeModal('modalManageDates');
     renderAll();
@@ -2388,15 +3052,17 @@
     fillArea(document.getElementById('areaFilter'), areaFilter);
     fillArea(document.getElementById('tableAreaFilter'), tableAreaFilter);
 
+    const exclusiveOpts = getExclusiveAssignedOptions();
     const dateSel = document.getElementById('tableDateFilter');
-    const validIds = new Set(['ALL', 'ASSIGNED', 'PENDING', 'MANUAL', ...state.options.map(o => o.id)]);
+    const validIds = new Set(['ALL', 'ASSIGNED', 'PENDING', 'MANUAL', ...state.options.map(o => o.id), ...exclusiveOpts.map(o => o.id)]);
     if (!validIds.has(tableDateFilter)) tableDateFilter = 'ALL';
     dateSel.innerHTML = `
       <option value="ALL">Todas las fechas y pendientes</option>
       <option value="ASSIGNED">Solo asignados</option>
       <option value="PENDING">Solo pendientes</option>
       <option value="MANUAL">Solo asignados manualmente (sin ruleta)</option>
-      ${state.options.map(o => `<option value="${xmlEscape(o.id)}">${xmlEscape(o.label)}</option>`).join('')}`;
+      ${state.options.map(o => `<option value="${xmlEscape(o.id)}">${xmlEscape(o.label)}</option>`).join('')}
+      ${exclusiveOpts.map(o => `<option value="${xmlEscape(o.id)}">${xmlEscape(o.label)} (Manual exclusivo)</option>`).join('')}`;
     dateSel.value = tableDateFilter;
   }
 
@@ -2419,10 +3085,12 @@
     const pct = total > 0 ? Math.round((assigned / total) * 100) : 0;
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
     const model = computeEquityModel();
+    const abInfo = model.byArea['A&B'];
+    const abCapTxt = abInfo ? `A&B máx. ${abInfo.maxTarget}/fecha` : `${formatRangeTarget(model.globalMinTarget, model.globalMaxTarget)}/fecha`;
 
     document.getElementById('headerTotalPeople').textContent = total;
     document.getElementById('headerModeLabel').textContent = state.mode === 'area_balanced'
-      ? `Equitativo por área y fecha (${formatRangeTarget(model.globalMinTarget, model.globalMaxTarget)}/fecha)`
+      ? `Equitativo por área (${abCapTxt} · General ${formatRangeTarget(model.globalMinTarget, model.globalMaxTarget)}/fecha)`
       : (state.mode === 'balanced'
           ? `Cupos globales (${state.options.length} fechas)`
           : `Azar libre (${eqPct} por fecha)`);
@@ -2458,8 +3126,20 @@
 
     listEl.innerHTML = filtered.map(emp => {
       const rec = state.assignments[emp.id];
-      const opt = rec ? getOptionById(rec.optionId) : null;
+      const opt = rec ? resolveAssignedOption(rec) : null;
+      const pendingSpin = !rec && state.pendingSpins ? state.pendingSpins[emp.id] : null;
       const isSelected = emp.id === selectedPersonId;
+      let statusPillsHtml = '';
+      if (opt) {
+        const tagHtml = rec.exclusiveManual
+          ? '<span class="exclusive-badge" title="Fecha manual exclusiva (no aparece en la ruleta)">Exclusivo</span>'
+          : (rec.isManual ? '<span class="manual-badge" title="Asignado manualmente sin girar la ruleta">Manual</span>' : '');
+        statusPillsHtml = `${tagHtml}<span class="pill" style="background:${opt.pillBg};color:${opt.pillText};">${xmlEscape(opt.shortLabel)}</span>`;
+      } else if (pendingSpin) {
+        statusPillsHtml = `<span class="pill pill-pending-confirm" title="Tiro 1/2 por confirmar">⏳ Tiro 1/2</span>`;
+      } else {
+        statusPillsHtml = `<span class="pill ${isSelected ? 'pill-selected' : 'pill-pending'}">${isSelected ? 'Seleccionado' : 'Pendiente'}</span>`;
+      }
       return `
         <button type="button" data-emp-id="${emp.id}" class="emp-row ${isSelected ? 'selected' : ''}">
           <div class="emp-info">
@@ -2467,11 +3147,7 @@
             <p class="emp-area truncate">${xmlEscape(emp.area)}</p>
           </div>
           <div style="display:flex;align-items:center;gap:5px;">
-            ${opt && rec.isManual ? '<span class="manual-badge" title="Asignado manualmente sin girar la ruleta">Manual</span>' : ''}
-            ${opt
-              ? `<span class="pill" style="background:${opt.pillBg};color:${opt.pillText};">${xmlEscape(opt.shortLabel)}</span>`
-              : `<span class="pill ${isSelected ? 'pill-selected' : 'pill-pending'}">${isSelected ? 'Seleccionado' : 'Pendiente'}</span>`
-            }
+            ${statusPillsHtml}
           </div>
         </button>`;
     }).join('');
@@ -2486,12 +3162,13 @@
     const badgeWrap = document.getElementById('activeAlreadyAssignedActions');
     const badgeEl = document.getElementById('activeExistingDateBadge');
 
+    limitChip.classList.remove('locked', 'warning');
+
     if (!emp) {
       nameEl.textContent = 'Selecciona una persona de la lista para comenzar';
       areaEl.classList.add('hidden');
-      limitChip.textContent = '1 giro por persona';
-      limitChip.classList.remove('locked');
-      metaEl.textContent = 'Haz clic en cualquier nombre o pulsa "Siguiente" para elegir al participante.';
+      limitChip.textContent = `Hasta ${MAX_SPINS_PER_PERSON} tiros`;
+      metaEl.textContent = 'Haz clic en cualquier nombre pendiente o pulsa "Siguiente" para iniciar su turno.';
       badgeWrap.classList.add('hidden');
     } else {
       nameEl.textContent = emp.name;
@@ -2499,44 +3176,63 @@
       areaEl.classList.remove('hidden');
 
       const rec = state.assignments[emp.id];
-      const opt = rec ? getOptionById(rec.optionId) : null;
+      const opt = rec ? resolveAssignedOption(rec) : null;
+      const pendingSpin = !rec && state.pendingSpins ? state.pendingSpins[emp.id] : null;
+      const pendingOpt = pendingSpin ? resolveAssignedOption(pendingSpin) : null;
       const spunAlready = hasSpunRoulette(emp.id);
 
       if (rec && opt) {
         if (rec.isManual) {
-          limitChip.textContent = spunAlready ? '🔒 Ya giró (1/1)' : '⚠️ Fecha manual';
+          limitChip.textContent = rec.isPreRegistered ? '🔒 Pre-registrado' : (spunAlready ? '🔒 Bloqueado' : '🔒 Fecha manual');
           limitChip.classList.add('locked');
-          metaEl.textContent = `⚠️ Asignado manualmente (sin girar la ruleta)${rec.manualReason ? ' · ' + rec.manualReason : ''}. La ruleta queda bloqueada para esta persona.`;
+          const exclNote = rec.exclusiveManual ? ' · Fecha manual exclusiva (no aparece en la ruleta).' : '';
+          const reasonNote = rec.manualReason ? ` · ${rec.manualReason}` : '';
+          metaEl.textContent = rec.isPreRegistered
+            ? `🔒 Descanso manual pre-registrado y bloqueado como turno completado${reasonNote}.${exclNote}`
+            : `⚠️ Asignado manualmente (sin girar la ruleta)${reasonNote}. La ruleta queda bloqueada para esta persona.${exclNote}`;
         } else {
-          limitChip.textContent = '🔒 Ya giró (1/1)';
+          const used = rec.spinCount === 2 ? 2 : 1;
+          limitChip.textContent = `🔒 Finalizado (${used}/${MAX_SPINS_PER_PERSON})`;
           limitChip.classList.add('locked');
-          metaEl.textContent = `🔒 Ya realizó su único giro de ruleta${rec.timestamp ? ' (' + formatDateTimeEs(rec.timestamp) + ')' : ''}. Solo se permite 1 tiro por persona.`;
+          const replacedTxt = used === 2 && rec.firstSpinLabel ? ` · Reemplazó a ${rec.firstSpinLabel}` : '';
+          metaEl.textContent = used === 2
+            ? `🔒 Realizó sus ${MAX_SPINS_PER_PERSON} tiros permitidos (2.º tiro definitivo${replacedTxt})${rec.timestamp ? ' · ' + formatDateTimeEs(rec.timestamp) : ''}. Turno bloqueado.`
+            : `🔒 Conservó la fecha de su 1.er tiro como definitiva${rec.timestamp ? ' (' + formatDateTimeEs(rec.timestamp) + ')' : ''}. Turno bloqueado.`;
         }
-        badgeEl.textContent = rec.isManual ? `⚠️ ${opt.shortLabel}` : opt.shortLabel;
+        badgeEl.textContent = rec.isManual ? `🔒 ${opt.shortLabel}` : opt.shortLabel;
         badgeEl.style.background = opt.pillBg;
         badgeEl.style.color = opt.pillText;
         badgeWrap.classList.remove('hidden');
+      } else if (pendingSpin && pendingOpt) {
+        limitChip.textContent = `⏳ Tiro 1/${MAX_SPINS_PER_PERSON} · Confirmar`;
+        limitChip.classList.add('warning');
+        metaEl.textContent = `Obtuvo ${pendingOpt.label} en su 1.er tiro. Elige si deseas conservarla o girar tu 2.ª y última vez.`;
+        badgeEl.textContent = `⏳ ${pendingOpt.shortLabel}`;
+        badgeEl.style.background = pendingOpt.pillBg;
+        badgeEl.style.color = pendingOpt.pillText;
+        badgeWrap.classList.remove('hidden');
       } else if (spunAlready) {
-        limitChip.textContent = '🔒 Ya giró (1/1)';
+        limitChip.textContent = '🔒 Turno finalizado';
         limitChip.classList.add('locked');
-        metaEl.textContent = '🔒 Esta persona ya utilizó su único giro de ruleta. Solo se permite 1 tiro por persona.';
+        metaEl.textContent = `🔒 Esta persona ya completó su turno definitivo en la ruleta (máx. ${MAX_SPINS_PER_PERSON} tiros).`;
         badgeWrap.classList.add('hidden');
       } else {
         const eqPct = formatPct(1 / Math.max(1, state.options.length));
         const probs = getOptionProbabilitiesMap(emp.id);
-        limitChip.textContent = '1 giro disponible';
-        limitChip.classList.remove('locked');
+        limitChip.textContent = `Hasta ${MAX_SPINS_PER_PERSON} tiros disponibles`;
         if (state.mode === 'area_balanced') {
           const model = computeEquityModel();
           const areaInfo = model.byArea[emp.area];
-          const areaRange = areaInfo ? formatRangeTarget(areaInfo.minTarget, areaInfo.maxTarget) : '—';
+          const areaLabel = areaInfo && areaInfo.hardCap !== null
+            ? `máx. ${areaInfo.maxTarget}/fecha`
+            : `${areaInfo ? formatRangeTarget(areaInfo.minTarget, areaInfo.maxTarget) : '—'}/fecha`;
           const globalRange = formatRangeTarget(model.globalMinTarget, model.globalMaxTarget);
           const openCount = state.options.filter(o => (probs[o.id] || 0) > 1e-6).length;
-          metaEl.textContent = `Equitativo estricto · ${emp.area} (${areaInfo ? areaInfo.total : 0}): ${areaRange}/fecha · General: ${globalRange}/fecha · ${openCount} ${openCount === 1 ? 'opción disponible' : 'opciones disponibles'}.`;
+          metaEl.textContent = `Hasta ${MAX_SPINS_PER_PERSON} tiros con confirmación · ${emp.area}: ${areaLabel} · General: ${globalRange}/fecha · ${openCount} ${openCount === 1 ? 'fecha disponible' : 'fechas disponibles'}.`;
         } else if (state.mode === 'balanced') {
-          metaEl.textContent = `1 único giro permitido · Cupos globales · Probabilidades: ${state.options.map(o => formatPct(probs[o.id] || 0)).join(' · ')}.`;
+          metaEl.textContent = `Hasta ${MAX_SPINS_PER_PERSON} tiros con confirmación · Cupos globales · Probabilidades: ${state.options.map(o => formatPct(probs[o.id] || 0)).join(' · ')}.`;
         } else {
-          metaEl.textContent = `1 único giro permitido · Azar libre: ${eqPct} para cada una de las ${state.options.length} fechas.`;
+          metaEl.textContent = `Hasta ${MAX_SPINS_PER_PERSON} tiros con confirmación · Azar libre: ${eqPct} para cada una de las ${state.options.length} fechas.`;
         }
         badgeWrap.classList.add('hidden');
       }
@@ -2546,7 +3242,8 @@
 
   function updateSpinButtons() {
     const emp = state.employees.find(e => e.id === selectedPersonId);
-    const canSpin = Boolean(emp) && !isSpinning && canSpinRoulette(emp.id);
+    const hasPending = Boolean(emp) && hasPendingFirstSpin(emp.id);
+    const canSpin = Boolean(emp) && !isSpinning && (canSpinRoulette(emp.id) || hasPending);
     const canManual = Boolean(emp) && !isSpinning;
     const btnMain = document.getElementById('btnSpinMain');
     const btnHub = document.getElementById('btnHubSpin');
@@ -2554,7 +3251,6 @@
     const btnText = document.getElementById('btnSpinText');
     const hubTitle = document.getElementById('hubTitle');
     const hubSub = document.getElementById('hubSubtext');
-    const eqPct = formatPct(1 / Math.max(1, state.options.length));
 
     btnMain.disabled = !canSpin;
     btnHub.disabled = !canSpin;
@@ -2564,18 +3260,32 @@
       btnText.textContent = 'Girando...';
       hubTitle.textContent = '...';
       hubSub.textContent = 'Suerte';
-    } else if (emp && hasSpunRoulette(emp.id)) {
-      btnText.textContent = '🔒 Ya giró (1/1)';
-      hubTitle.textContent = '🔒';
-      hubSub.textContent = '1/1';
+    } else if (hasPending) {
+      const pRec = state.pendingSpins[emp.id];
+      const pOpt = resolveAssignedOption(pRec);
+      btnText.textContent = `Decidir Tiro 1/2 (${pOpt ? pOpt.shortLabel : 'Confirmar'})`;
+      hubTitle.textContent = 'DECIDIR';
+      hubSub.textContent = 'Tiro 1/2';
     } else if (emp && state.assignments[emp.id]) {
-      btnText.textContent = '🔒 Ya tiene fecha';
+      const rec = state.assignments[emp.id];
+      if (rec.isManual) {
+        btnText.textContent = rec.isPreRegistered ? '🔒 Pre-registrado' : '🔒 Fecha manual';
+        hubTitle.textContent = '🔒';
+        hubSub.textContent = 'Manual';
+      } else {
+        const used = rec.spinCount === 2 ? 2 : 1;
+        btnText.textContent = `🔒 Definitivo (${used}/${MAX_SPINS_PER_PERSON})`;
+        hubTitle.textContent = '🔒';
+        hubSub.textContent = `${used}/${MAX_SPINS_PER_PERSON}`;
+      }
+    } else if (emp && hasSpunRoulette(emp.id)) {
+      btnText.textContent = '🔒 Turno finalizado';
       hubTitle.textContent = '🔒';
-      hubSub.textContent = 'Manual';
+      hubSub.textContent = 'Listo';
     } else {
-      btnText.textContent = 'Girar Ruleta';
+      btnText.textContent = 'Girar Ruleta (Tiro 1/2)';
       hubTitle.textContent = 'GIRAR';
-      hubSub.textContent = state.mode === 'area_balanced' ? 'Equit.' : (state.mode === 'equal' ? eqPct : 'Urna');
+      hubSub.textContent = 'Tiro 1/2';
     }
   }
 
@@ -2584,19 +3294,22 @@
     const probs = getOptionProbabilitiesMap(selectedPersonId);
     const grid = document.getElementById('dateCardsGrid');
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
-    const model = computeEquityModel();
+    const excludeForView = selectedPersonId !== null && hasPendingFirstSpin(selectedPersonId) ? Number(selectedPersonId) : null;
+    const model = computeEquityModel(state.options, state.employees, state.assignments, state.pendingSpins, excludeForView);
     const selectedEmp = state.employees.find(e => e.id === selectedPersonId) || null;
     const selectedAreaInfo = selectedEmp ? model.byArea[selectedEmp.area] : null;
 
     if (state.mode === 'area_balanced') {
       const gRange = formatRangeTarget(model.globalMinTarget, model.globalMaxTarget);
       if (selectedAreaInfo) {
-        const aRange = formatRangeTarget(selectedAreaInfo.minTarget, selectedAreaInfo.maxTarget);
+        const aRange = selectedAreaInfo.hardCap !== null
+          ? `máx. ${selectedAreaInfo.maxTarget}`
+          : formatRangeTarget(selectedAreaInfo.minTarget, selectedAreaInfo.maxTarget);
         document.getElementById('dateGridSummaryLabel').textContent =
-          `Equitativo · ${selectedEmp.area}: ${aRange}/fecha · General: ${gRange}/fecha`;
+          `${state.options.length} fechas en ruleta · ${selectedEmp.area}: ${aRange}/fecha · General: ${gRange}/fecha`;
       } else {
         document.getElementById('dateGridSummaryLabel').textContent =
-          `${state.options.length} fechas · Equitativo por área y fecha (${gRange}/fecha)`;
+          `${state.options.length} fechas en ruleta · A&B máx. 4/fecha · General: ${gRange}/fecha`;
       }
     } else if (state.mode === 'balanced') {
       document.getElementById('dateGridSummaryLabel').textContent = `${state.options.length} fechas en la ruleta · Cupos globales`;
@@ -2684,50 +3397,72 @@
     } else {
       regBody.innerHTML = rows.map((emp, idx) => {
         const rec = state.assignments[emp.id];
-        const opt = rec ? getOptionById(rec.optionId) : null;
+        const opt = rec ? resolveAssignedOption(rec) : null;
+        const pendingSpin = !rec && state.pendingSpins ? state.pendingSpins[emp.id] : null;
+        const pendingOpt = pendingSpin ? resolveAssignedOption(pendingSpin) : null;
         const spunAlready = hasSpunRoulette(emp.id);
+        const lockedPre = isPreRegisteredLocked(emp.id);
         const flashClass = emp.id === lastFlashedId ? 'row-flash' : '';
         let actionHtml = '';
         if (rec) {
-          if (rec.isManual && !spunAlready) {
+          if (rec.isManual && !spunAlready && !lockedPre) {
             actionHtml = `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Manual</button>` +
               `<button type="button" data-action="clear" data-emp-id="${emp.id}" class="link-btn danger">Quitar</button>`;
           } else {
-            actionHtml = `<span class="locked-tag" title="Ya realizó su único giro de ruleta">🔒 1/1</span>` +
+            const lockLabel = rec.isPreRegistered
+              ? '🔒 Manual'
+              : `🔒 ${rec.spinCount === 2 ? '2/2' : '1/2'}`;
+            const lockTitle = rec.isPreRegistered
+              ? 'Pre-registrado manualmente (bloqueado como turno completado)'
+              : 'Turno definitivo completado en la ruleta';
+            actionHtml = `<span class="locked-tag" title="${lockTitle}">${lockLabel}</span>` +
               `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
           }
+        } else if (pendingSpin) {
+          actionHtml = `<button type="button" data-action="decide" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Decidir 1/2</button>` +
+            `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
         } else if (spunAlready) {
-          actionHtml = `<span class="locked-tag" title="Ya realizó su único giro de ruleta">🔒 1/1</span>` +
+          actionHtml = `<span class="locked-tag" title="Ya completó su turno en la ruleta">🔒 Listo</span>` +
             `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
         } else {
           actionHtml = `<button type="button" data-action="select" data-emp-id="${emp.id}" class="link-btn" style="margin-right:8px;">Seleccionar</button>` +
             `<button type="button" data-action="manual" data-emp-id="${emp.id}" class="link-btn">Manual</button>`;
         }
+
+        let dateCellHtml = `<span style="color:var(--text-muted);font-style:italic;">Pendiente</span>`;
+        if (opt) {
+          const badgeHtml = rec.exclusiveManual
+            ? ` <span class="exclusive-badge" title="${xmlEscape(rec.manualReason || 'Fecha manual exclusiva (NO aparece en la ruleta)')}">★ Manual exclusivo</span>`
+            : (rec.isManual
+                ? ` <span class="manual-badge" title="${xmlEscape(rec.manualReason || 'Asignación manual sin ruleta')}">⚠️ Manual</span>`
+                : (rec.spinCount === 2 ? ` <span class="date-assigned-tag">Tiro 2/2</span>` : ''));
+          dateCellHtml = `<span class="pill" style="background:${opt.pillBg};color:${opt.pillText};"><span class="date-dot" style="background:${opt.colorMain};width:7px;height:7px;"></span>${xmlEscape(opt.label)}</span>${badgeHtml}`;
+        } else if (pendingOpt) {
+          dateCellHtml = `<span class="pill pill-pending-confirm">⏳ ${xmlEscape(pendingOpt.label)} (Por confirmar)</span>`;
+        }
+
         return `
           <tr class="${flashClass}">
             <td class="center tabular" style="color:var(--text-muted);">${idx + 1}</td>
             <td class="nowrap" style="color:var(--text-muted);">${xmlEscape(emp.area)}</td>
             <td style="font-weight:600;">${xmlEscape(emp.name)}</td>
-            <td class="nowrap">
-              ${opt
-                ? `<span class="pill" style="background:${opt.pillBg};color:${opt.pillText};"><span class="date-dot" style="background:${opt.colorMain};width:7px;height:7px;"></span>${xmlEscape(opt.label)}</span>` +
-                  (rec.isManual ? ` <span class="manual-badge" title="${xmlEscape(rec.manualReason || 'Asignación manual sin ruleta')}">⚠️ Manual</span>` : '')
-                : `<span style="color:var(--text-muted);font-style:italic;">Pendiente</span>`
-              }
-            </td>
-            <td class="nowrap" style="color:var(--text-muted);">${opt ? xmlEscape(opt.days) : '—'}</td>
-            <td class="nowrap tabular" style="color:var(--text-muted);">${rec ? formatDateTimeEs(rec.timestamp) : '—'}</td>
+            <td class="nowrap">${dateCellHtml}</td>
+            <td class="nowrap" style="color:var(--text-muted);">${opt ? xmlEscape(opt.days) : (pendingOpt ? xmlEscape(pendingOpt.days) : '—')}</td>
+            <td class="nowrap tabular" style="color:var(--text-muted);">${rec ? formatDateTimeEs(rec.timestamp) : (pendingSpin ? formatDateTimeEs(pendingSpin.timestamp) : '—')}</td>
             <td class="right nowrap">${actionHtml}</td>
           </tr>`;
       }).join('');
     }
     lastFlashedId = null;
 
-    // ---- Tab 2: Dynamic Summary by Area ----
+    // ---- Tab 2: Dynamic Summary by Area (6 roulette dates + exclusive manual dates) ----
+    const exclusiveOpts = getExclusiveAssignedOptions();
+    const summaryCols = [...state.options, ...exclusiveOpts];
     const sumHead = document.getElementById('summaryThead');
     sumHead.innerHTML = `<tr>
-      <th>Área (meta equitativa)</th>
+      <th>Área (meta en ruleta)</th>
       ${state.options.map(o => `<th class="center">${xmlEscape(o.shortLabel)}</th>`).join('')}
+      ${exclusiveOpts.map(o => `<th class="center th-exclusive" title="Fecha manual exclusiva (NO aparece en la ruleta)">${xmlEscape(o.shortLabel)}<span class="area-meta-sub">Manual excl.</span></th>`).join('')}
       <th class="center">Pendientes</th>
       <th class="center">Total</th>
     </tr>`;
@@ -2735,40 +3470,60 @@
     const sumBody = document.getElementById('summaryTbody');
     const areas = getUniqueAreas();
     const k = Math.max(1, state.options.length);
-    const totals = Array(state.options.length + 2).fill(0);
+    const numDateCols = summaryCols.length;
+    const totals = Array(numDateCols + 2).fill(0);
+    const eqModel = computeEquityModel();
+
     const areaHtml = areas.map(area => {
       const aEmps = state.employees.filter(e => e.area === area);
-      const c = state.options.map(o => aEmps.filter(e => state.assignments[e.id]?.optionId === o.id).length);
+      const areaModel = eqModel.byArea[area];
+      const c = summaryCols.map(o => aEmps.filter(e => {
+        const rec = state.assignments[e.id];
+        if (!rec) return false;
+        const resolved = resolveAssignedOption(rec);
+        return resolved && resolved.id === o.id;
+      }).length);
       const pend = aEmps.filter(e => !state.assignments[e.id]).length;
       const tot = aEmps.length;
-      const minT = Math.floor(tot / k);
-      const maxT = Math.ceil(tot / k);
+      const minT = areaModel ? areaModel.minTarget : Math.floor(tot / k);
+      const maxT = areaModel ? areaModel.maxTarget : Math.ceil(tot / k);
+      const metaDesc = areaModel && areaModel.hardCap !== null
+        ? `Máx. ${maxT} / fecha${areaModel.exclusiveAssigned > 0 ? ` (+${areaModel.exclusiveAssigned} excl.)` : ''}`
+        : `Meta: ${formatRangeTarget(minT, maxT)} / fecha`;
+
       c.forEach((v, i) => totals[i] += v);
-      totals[state.options.length] += pend;
-      totals[state.options.length + 1] += tot;
+      totals[numDateCols] += pend;
+      totals[numDateCols + 1] += tot;
       return `
         <tr>
           <td style="font-weight:600;">
             ${xmlEscape(area)}
-            <span class="area-meta-sub">Meta: ${formatRangeTarget(minT, maxT)} / fecha</span>
+            <span class="area-meta-sub">${xmlEscape(metaDesc)}</span>
           </td>
-          ${c.map(v => `<td class="center tabular ${v > maxT ? 'cell-over-cap' : ''}"${v > maxT ? ` title="Supera la meta equitativa de ${maxT} por fecha"` : ''}>${v}</td>`).join('')}
+          ${c.map((v, colIdx) => {
+            const isExclCol = colIdx >= state.options.length;
+            const overCap = !isExclCol && v > maxT && (area !== 'Administrativa');
+            return `<td class="center tabular ${overCap ? 'cell-over-cap' : ''}"${overCap ? ` title="Supera el cupo de ${maxT} por fecha"` : ''}>${v}</td>`;
+          }).join('')}
           <td class="center tabular" style="color:var(--text-muted);">${pend}</td>
           <td class="center tabular" style="font-weight:700;">${tot}</td>
         </tr>`;
     }).join('');
 
-    const totalEmps = totals[state.options.length + 1];
-    const gMinT = Math.floor(totalEmps / k);
-    const gMaxT = Math.ceil(totalEmps / k);
+    const totalEmps = totals[numDateCols + 1];
+    const gMinT = eqModel.globalMinTarget;
+    const gMaxT = eqModel.globalMaxTarget;
     sumBody.innerHTML = areaHtml + `
       <tr class="total-row">
         <td>
           TOTAL QUIRAMA
-          <span class="area-meta-sub">Meta: ${formatRangeTarget(gMinT, gMaxT)} / fecha</span>
+          <span class="area-meta-sub">Ruleta: ${formatRangeTarget(gMinT, gMaxT)} / fecha${eqModel.totalExclusiveAssigned > 0 ? ` (+${eqModel.totalExclusiveAssigned} excl.)` : ''}</span>
         </td>
-        ${totals.slice(0, state.options.length).map(v => `<td class="center tabular ${v > gMaxT ? 'cell-over-cap' : ''}">${v}</td>`).join('')}
-        <td class="center tabular" style="color:var(--text-muted);">${totals[state.options.length]}</td>
+        ${totals.slice(0, numDateCols).map((v, colIdx) => {
+          const isExclCol = colIdx >= state.options.length;
+          return `<td class="center tabular ${!isExclCol && v > gMaxT ? 'cell-over-cap' : ''}">${v}</td>`;
+        }).join('')}
+        <td class="center tabular" style="color:var(--text-muted);">${totals[numDateCols]}</td>
         <td class="center tabular">${totalEmps}</td>
       </tr>`;
 
@@ -2778,15 +3533,16 @@
       histBody.innerHTML = `<tr><td colspan="6" class="center" style="padding:28px;color:var(--text-muted);">Aún no se ha realizado ningún registro.</td></tr>`;
     } else {
       histBody.innerHTML = [...state.history].reverse().map(item => {
-        const opt = item.optionId !== null ? getOptionById(item.optionId) : null;
+        const opt = resolveAssignedOption({ optionId: item.optionId, optionLabel: item.optionLabel });
         const label = opt ? opt.label : (item.optionLabel || '—');
         const isMan = Boolean(item.isManual || item.mode === 'manual');
-        const modeText = item.mode === 'area_balanced'
+        const fallbackModeText = item.mode === 'area_balanced'
           ? 'Equitativo por área'
           : (item.mode === 'balanced' ? 'Cupos globales' : 'Azar libre');
+        const displayMode = item.modeText || fallbackModeText;
         const modeBadge = isMan
-          ? `<span class="manual-badge">⚠️ Manual (sin ruleta)${item.manualReason ? ' · ' + xmlEscape(item.manualReason) : ''}</span>`
-          : `<span style="color:var(--text-muted);">${modeText}</span>`;
+          ? `<span class="manual-badge">⚠️ ${xmlEscape(item.modeText || (item.manualReason ? `Manual (sin ruleta) · ${item.manualReason}` : 'Manual (sin ruleta)'))}</span>`
+          : `<span style="color:var(--text-muted);">${xmlEscape(displayMode)}</span>`;
         return `
           <tr>
             <td class="center tabular" style="font-weight:700;color:var(--text-muted);">#${item.order}</td>
@@ -2910,10 +3666,13 @@
     if (areaPreview) {
       const areasSorted = Object.values(model.byArea).sort((a, b) => b.total - a.total);
       const chips = [
-        `<span class="equity-chip highlight"><strong>Total (${model.totalEmps}):</strong> ${gRange} / fecha</span>`
-      ].concat(areasSorted.map((a, idx) =>
-        `<span class="equity-chip ${idx === 0 ? 'highlight' : ''}"><strong>${xmlEscape(a.area)} (${a.total}):</strong> ${formatRangeTarget(a.minTarget, a.maxTarget)} / fecha</span>`
-      ));
+        `<span class="equity-chip highlight"><strong>Ruleta (${model.rouletteTotalEmps}):</strong> ${gRange} / fecha</span>`
+      ].concat(areasSorted.map((a, idx) => {
+        const capTxt = a.hardCap !== null
+          ? `máx. ${a.maxTarget} / fecha${a.exclusiveAssigned > 0 ? ` (+${a.exclusiveAssigned} excl.)` : ''}`
+          : `${formatRangeTarget(a.minTarget, a.maxTarget)} / fecha`;
+        return `<span class="equity-chip ${idx === 0 ? 'highlight' : ''}"><strong>${xmlEscape(a.area)} (${a.total}):</strong> ${capTxt}</span>`;
+      }));
       areaPreview.innerHTML = chips.join('');
     }
 
@@ -2984,11 +3743,18 @@
     if (btn.dataset.action === 'select') {
       selectPerson(empId);
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (btn.dataset.action === 'decide') {
+      selectPerson(empId);
+      openSpinDecisionModal(empId);
     } else if (btn.dataset.action === 'manual') {
       openManualAssignModal(empId);
     } else if (btn.dataset.action === 'clear') {
+      if (isPreRegisteredLocked(empId)) {
+        showToast(`🔒 ${emp.name} tiene descanso manual pre-registrado y bloqueado.`, '🔒');
+        return;
+      }
       if (hasSpunRoulette(empId)) {
-        showToast(`🔒 ${emp.name} ya giró la ruleta. No se puede borrar su único giro.`, '🔒');
+        showToast(`🔒 ${emp.name} ya completó su turno definitivo en la ruleta. No se puede borrar.`, '🔒');
         return;
       }
       openConfirm(
@@ -3010,6 +3776,8 @@
   document.getElementById('btnSpinMain').addEventListener('click', spinWheel);
   document.getElementById('btnHubSpin').addEventListener('click', spinWheel);
   document.getElementById('btnManualAssign').addEventListener('click', () => openManualAssignModal(selectedPersonId));
+  document.getElementById('btnKeepFirstSpin').addEventListener('click', confirmKeepFirstSpin);
+  document.getElementById('btnTakeSecondSpin').addEventListener('click', startSecondAndFinalSpin);
 
   // Manual assign submit
   document.getElementById('formManualAssign').addEventListener('submit', async (e) => {
@@ -3017,7 +3785,7 @@
     const emp = state.employees.find(x => x.id === selectedPersonId);
     const checked = document.querySelector('input[name="manualDateOption"]:checked');
     if (!emp || !checked) return;
-    const opt = getOptionById(checked.value);
+    const opt = getOptionById(checked.value) || getExclusiveOptionById(checked.value);
     if (!opt) return;
     const reason = document.getElementById('manualReasonInput').value.trim();
     closeModal('modalManualAssign');
@@ -3108,7 +3876,7 @@
     const { empId, prevAssignment, histOrder } = lastSpinRecord;
     if (prevAssignment && prevAssignment.isManual) {
       state.assignments[empId] = prevAssignment;
-      const prevOpt = getOptionById(prevAssignment.optionId);
+      const prevOpt = resolveAssignedOption(prevAssignment);
       if (syncUrl && prevOpt) {
         await postToDrive({
           action: 'recordSpin',
@@ -3146,11 +3914,16 @@
     if (document.querySelector('.modal-backdrop:not(.hidden)')) return;
     if (selectedPersonId && !isSpinning) {
       e.preventDefault();
-      if (canSpinRoulette(selectedPersonId)) {
+      if (hasPendingFirstSpin(selectedPersonId)) {
+        openSpinDecisionModal(selectedPersonId);
+      } else if (canSpinRoulette(selectedPersonId)) {
         spinWheel();
       } else {
         const emp = state.employees.find(x => x.id === selectedPersonId);
-        showToast(`🔒 ${emp ? emp.name : 'Esta persona'} ya tiene su turno asignado. Solo se permite 1 giro por persona.`, '🔒');
+        const msg = emp && isPreRegisteredLocked(emp.id)
+          ? `🔒 ${emp.name} tiene su descanso manual pre-registrado y bloqueado.`
+          : `🔒 ${emp ? emp.name : 'Esta persona'} ya completó su turno definitivo (máx. ${MAX_SPINS_PER_PERSON} tiros).`;
+        showToast(msg, '🔒');
       }
     }
   });
@@ -3248,23 +4021,26 @@
     }
   });
 
-  // Reset all
+  // Reset all (preserves the 13 locked pre-registered manual assignments)
   document.getElementById('btnResetAll').addEventListener('click', () => {
     openConfirm(
-      '¿Reiniciar todo el sorteo?',
+      '¿Reiniciar los giros de la ruleta?',
       syncUrl
-        ? 'Se borrarán todas las fechas asignadas y el historial tanto aquí como en la hoja de Google Drive. Los colaboradores y las fechas configuradas se conservarán.'
-        : 'Se borrarán todas las fechas asignadas y el historial de giros para empezar desde cero.',
+        ? 'Se reiniciarán únicamente los 31 participantes pendientes tanto aquí como en Google Drive. Los 13 descansos manuales pre-registrados y las 6 fechas se conservarán intactos.'
+        : 'Se borrarán los giros de ruleta de los 31 participantes pendientes. Los 13 descansos manuales pre-registrados se conservarán intactos.',
       async () => {
-        state.assignments = {};
-        state.history = [];
+        state.assignments = buildPreRegisteredAssignments(state.options);
+        state.pendingSpins = {};
+        state.history = buildPreRegisteredHistory(state.options);
         lastSpinRecord = null;
         saveState();
         if (syncUrl) await postToDrive({ action: 'resetAll' });
         document.getElementById('resultBanner').classList.add('hidden');
         document.getElementById('liveTicker').textContent = 'Listo para sortear';
+        const firstPend = state.employees.find(e => !state.assignments[e.id]);
+        if (firstPend) selectedPersonId = firstPend.id;
         renderAll();
-        showToast('Sorteo reiniciado desde cero', '↺');
+        showToast('Giros reiniciados (13 pre-registrados conservados)', '↺');
       }
     );
   });
@@ -3333,7 +4109,8 @@
   document.getElementById('btnAutoDistributeQuotas').addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const even = normalizeQuotas(null, state.options, state.employees.length);
+    const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedOptions().length);
+    const even = normalizeQuotas(null, state.options, rouletteCount);
     renderQuotaInputs(even);
   });
 
@@ -3347,14 +4124,15 @@
     document.querySelectorAll('.quota-input').forEach(inp => {
       nextQuotas[inp.dataset.optId] = Math.max(1, parseInt(inp.value, 10) || 1);
     });
-    state.quotas = normalizeQuotas(nextQuotas, state.options, state.employees.length);
+    const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedOptions().length);
+    state.quotas = normalizeQuotas(nextQuotas, state.options, rouletteCount);
     saveState();
     closeModal('modalSettings');
     if (syncUrl) await postToDrive({ action: 'updateSettings', mode: state.mode, quotas: state.quotas });
     renderAll();
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
     const msg = state.mode === 'area_balanced'
-      ? 'Modo activo: Equitativo estricto por área y fecha'
+      ? 'Modo activo: Equitativo estricto por área (A&B máx. 4/fecha)'
       : (state.mode === 'balanced'
           ? 'Modo activo: Cupos globales personalizados'
           : `Modo activo: Azar libre (${eqPct} c/u)`);
@@ -3395,7 +4173,8 @@
           mode: resolvedMode,
           equityVersion: EQUITY_SCHEMA_VERSION,
           options: opts,
-          quotas: normalizeQuotas(parsed.quotas, opts, parsed.employees.length)
+          pendingSpins: parsed.pendingSpins && typeof parsed.pendingSpins === 'object' ? parsed.pendingSpins : {},
+          quotas: normalizeQuotas(parsed.quotas, opts, Math.max(1, parsed.employees.length - EXCLUSIVE_MANUAL_OPTIONS.length))
         };
         saveState();
         closeModal('modalSettings');
@@ -3415,7 +4194,9 @@
   });
   document.querySelectorAll('.modal-backdrop').forEach(backdrop => {
     backdrop.addEventListener('click', (e) => {
-      if (e.target === backdrop) backdrop.classList.add('hidden');
+      if (e.target === backdrop && backdrop.dataset.noBackdropClose !== 'true') {
+        backdrop.classList.add('hidden');
+      }
     });
   });
 
@@ -3430,7 +4211,10 @@
   // 14. BOOT
   // =========================================================================
   initTheme();
-  const firstPending = state.employees.find(e => !state.assignments[e.id]);
+  const pendingDecisionId = Object.keys(state.pendingSpins || {})[0];
+  const firstPending = pendingDecisionId
+    ? state.employees.find(e => e.id === Number(pendingDecisionId))
+    : state.employees.find(e => !state.assignments[e.id]);
   if (firstPending) selectedPersonId = firstPending.id;
   setupWheelCanvas();
   renderAll();

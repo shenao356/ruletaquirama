@@ -30,7 +30,7 @@
         <div style="min-width:0;">
           <h1 class="brand-title truncate">Ruleta de Descansos · Fin de Año 2026</h1>
           <p class="brand-subtitle truncate">
-            Quirama · <span id="headerTotalPeople">44</span> colaboradores · 1 giro por persona · <span id="headerModeLabel">Equitativo por área y fecha (11/fecha)</span>
+            Quirama · <span id="headerTotalPeople">44</span> colaboradores · Hasta 2 tiros/persona · <span id="headerModeLabel">Equitativo por área (A&amp;B máx. 4/fecha)</span>
           </p>
         </div>
       </div>
@@ -45,9 +45,9 @@
         <!-- Progress -->
         <div class="progress-pill">
           <span class="hide-xs" style="color:var(--text-muted);">Avance</span>
-          <strong id="progressCount" class="tabular">0 / 44</strong>
+          <strong id="progressCount" class="tabular">13 / 44</strong>
           <div class="progress-track">
-            <div id="progressBar" class="progress-fill" style="width:0%;"></div>
+            <div id="progressBar" class="progress-fill" style="width:30%;"></div>
           </div>
         </div>
 
@@ -107,7 +107,7 @@
           <div class="card-header-row">
             <div>
               <h2 class="section-title">1. Selecciona quién gira</h2>
-              <p class="section-desc">Elige a la persona antes de girar (máx. 1 giro por persona)</p>
+              <p class="section-desc">Elige a una persona pendiente (máx. 2 tiros con confirmación)</p>
             </div>
             <button id="btnAddPerson" type="button" class="btn btn-sm">+ Persona</button>
           </div>
@@ -124,8 +124,8 @@
 
           <div class="card-header-row">
             <div class="tabs" role="tablist">
-              <button type="button" data-status="pending" class="tab-btn status-tab active">Pendientes (<span id="countPendingTab">44</span>)</button>
-              <button type="button" data-status="assigned" class="tab-btn status-tab">Sorteados (<span id="countAssignedTab">0</span>)</button>
+              <button type="button" data-status="pending" class="tab-btn status-tab active">Pendientes (<span id="countPendingTab">31</span>)</button>
+              <button type="button" data-status="assigned" class="tab-btn status-tab">Asignados (<span id="countAssignedTab">13</span>)</button>
               <button type="button" data-status="all" class="tab-btn status-tab">Todos</button>
             </div>
 
@@ -147,10 +147,10 @@
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--text-muted);">
               <span>2. Turno en la ruleta</span>
               <span id="activeAreaChip" class="area-chip hidden"></span>
-              <span id="activeSpinLimitChip" class="limit-chip">1 giro por persona</span>
+              <span id="activeSpinLimitChip" class="limit-chip">Hasta 2 tiros</span>
             </div>
             <p id="activePersonName" class="active-name truncate">Selecciona una persona de la lista para comenzar</p>
-            <p id="activePersonMeta" class="active-meta">1 único giro por persona · Reparto equitativo garantizado por área y fecha.</p>
+            <p id="activePersonMeta" class="active-meta">Hasta 2 tiros por persona con confirmación · A&amp;B máx. 4/fecha · Reparto equitativo garantizado.</p>
           </div>
           <div id="activeAlreadyAssignedActions" class="hidden">
             <span id="activeExistingDateBadge" class="pill"></span>
@@ -161,7 +161,7 @@
           <canvas id="wheelCanvas" width="420" height="420" style="width:380px;height:380px;"></canvas>
           <button id="btnHubSpin" type="button" class="wheel-hub-btn" aria-label="Girar ruleta">
             <span id="hubTitle" class="hub-title">GIRAR</span>
-            <span id="hubSubtext" class="hub-sub">Equit.</span>
+            <span id="hubSubtext" class="hub-sub">Tiro 1/2</span>
           </button>
         </div>
 
@@ -203,7 +203,7 @@
 
         <!-- Date Probability & Live Count Cards -->
         <div class="date-grid-header">
-          <span id="dateGridSummaryLabel">4 fechas · Equitativo por área y fecha (11/fecha)</span>
+          <span id="dateGridSummaryLabel">6 fechas · Equitativo por área (A&amp;B máx. 4/fecha · General 7–8/fecha)</span>
           <button id="btnManageDatesInline" type="button" class="link-btn">Editar / agregar fechas</button>
         </div>
         <div id="dateCardsGrid" class="date-grid"></div>
@@ -247,12 +247,14 @@
           <span style="color:var(--text-muted);">Filtrar:</span>
           <select id="tableDateFilter" class="select">
             <option value="ALL">Todas las fechas y pendientes</option>
-            <option value="ASSIGNED">Solo sorteados</option>
+            <option value="ASSIGNED">Solo asignados</option>
             <option value="PENDING">Solo pendientes</option>
             <option value="0">23 y 24 de diciembre</option>
-            <option value="1">25 y 26 de diciembre</option>
-            <option value="2">30 y 31 de diciembre</option>
-            <option value="3">01 y 02 de enero</option>
+            <option value="1">24 y 25 de diciembre</option>
+            <option value="2">25 y 26 de diciembre</option>
+            <option value="3">30 y 31 de diciembre</option>
+            <option value="4">31 de diciembre y 01 de enero</option>
+            <option value="5">01 y 02 de enero</option>
           </select>
           <select id="tableAreaFilter" class="select">
             <option value="ALL">Todas las áreas</option>
@@ -411,7 +413,7 @@
           <div style="width:100%;">
             <strong>Equitativo estricto por área y fecha (Recomendado)</strong>
             <p style="margin:4px 0 0;color:var(--text-muted);font-size:12px;">
-              Garantiza que ninguna fecha quede sobrecargada y reparte de forma equitativa cada área (especialmente <strong>A&amp;B</strong>) en todas las fechas. Diferencia máxima de 1 persona por fecha tanto en cada área como en el total general.
+              Garantiza <strong>máximo 4 personas por fecha en A&amp;B</strong> en las 6 fechas activas de la ruleta (24 cupos + 1 fecha manual exclusiva) y reparto equitativo global y por área en el resto del equipo.
             </p>
             <div id="equityTargetsPreview" class="equity-preview-grid"></div>
           </div>
@@ -434,7 +436,7 @@
         <label class="radio-option">
           <input type="radio" name="probMode" value="equal" style="margin-top:3px;" />
           <div>
-            <strong id="settingsEqualTitle">Azar libre sin cupos (25% independiente en cada giro)</strong>
+            <strong id="settingsEqualTitle">Azar libre sin cupos (16.7% independiente en cada giro)</strong>
             <p id="settingsEqualDesc" style="margin:4px 0 0;color:var(--text-muted);font-size:12px;">
               Cada persona gira con probabilidad fija sin límites por fecha ni por área (el azar puede dejar fechas más cargadas que otras).
             </p>
@@ -467,7 +469,7 @@
       <div class="modal-header">
         <div>
           <h3 id="manageDatesTitle" class="modal-title">Modificar o agregar fechas de descanso</h3>
-          <p id="manageDatesProbPreview" class="section-desc">4 fechas activas · Probabilidad igual: 25% cada una</p>
+          <p id="manageDatesProbPreview" class="section-desc">6 fechas activas · Reparto equitativo: 7–8/fecha (A&amp;B: máx. 4/fecha)</p>
         </div>
         <button type="button" data-close-modal="modalManageDates" class="modal-close" aria-label="Cerrar">&times;</button>
       </div>
@@ -476,7 +478,7 @@
 
       <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;">
         <button id="btnAddNewDateRow" type="button" class="btn">+ Agregar nueva fecha</button>
-        <button id="btnRestoreDefaultDates" type="button" class="link-btn">Restaurar las 4 fechas originales</button>
+        <button id="btnRestoreDefaultDates" type="button" class="link-btn">Restaurar las 6 fechas oficiales</button>
       </div>
 
       <p id="manageDatesWarning" class="hidden" style="margin:0;padding:8px 12px;border-radius:8px;background:var(--warning-bg);border:1px solid var(--warning-border);color:var(--warning-text);font-size:12px;"></p>
@@ -528,6 +530,52 @@
           <button type="submit" class="btn btn-primary">Confirmar fecha manual (sin ruleta)</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: 1st Spin Confirmation (Keep or Take 2nd & Final Spin) -->
+  <div id="modalSpinDecision" class="modal-backdrop hidden" data-no-backdrop-close="true" role="dialog" aria-modal="true" aria-labelledby="spinDecisionTitle">
+    <div class="modal spin-decision-modal">
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span class="spin-step-badge">TIRO 1 DE 2</span>
+          <h3 id="spinDecisionTitle" class="modal-title">¿Conservar esta fecha o girar una 2.ª y última vez?</h3>
+        </div>
+      </div>
+
+      <div class="panel-box" style="gap:2px;">
+        <span style="font-size:11.5px;color:var(--text-muted);">Colaborador en turno</span>
+        <strong id="decisionPersonName" style="font-size:14.5px;"></strong>
+        <span id="decisionPersonArea" style="font-size:12px;color:var(--text-muted);"></span>
+      </div>
+
+      <div id="decisionDateCard" class="decision-date-card">
+        <span class="decision-date-eyebrow">Fecha obtenida en el 1.er tiro</span>
+        <div class="decision-date-main">
+          <span id="decisionDateDot" class="date-dot" style="width:12px;height:12px;"></span>
+          <strong id="decisionDateLabel"></strong>
+        </div>
+        <span id="decisionDateDays" class="decision-date-days"></span>
+      </div>
+
+      <div class="decision-rules-box">
+        <p style="margin:0 0 6px;"><strong>Elige una opción para continuar:</strong></p>
+        <ul class="decision-rules-list">
+          <li><strong>Conservar esta fecha:</strong> queda registrada de inmediato como tu descanso definitivo y tu turno se bloquea.</li>
+          <li><strong>Girar una 2.ª y última vez:</strong> este 1.er resultado se descarta y el <strong>2.º tiro reemplazará al 1.º</strong> quedando definitivo e irreversible.</li>
+        </ul>
+      </div>
+
+      <p id="decisionSingleOptionHint" class="decision-single-hint hidden"></p>
+
+      <div class="decision-actions">
+        <button id="btnKeepFirstSpin" type="button" class="btn btn-primary btn-lg">
+          <span>✓ Conservar esta fecha (Definitivo)</span>
+        </button>
+        <button id="btnTakeSecondSpin" type="button" class="btn btn-second-spin btn-lg">
+          <span>↻ Girar 2.ª y última vez</span>
+        </button>
+      </div>
     </div>
   </div>
 

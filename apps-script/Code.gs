@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * RULETA DE DESCANSOS FIN DE AÑO 2026 — QUIRAMA (v3 — Equitativo por Área y Fecha)
+ * RULETA DE DESCANSOS FIN DE AÑO 2026 — QUIRAMA (v4 — 6 Fechas, A&B máx. 4, 2 Tiros)
  * Backend de sincronización en vivo para Google Sheets / Google Drive
  * ============================================================================
  *
@@ -21,24 +21,68 @@ const SHEET_MAIN = 'Descansos Quirama';
 const SHEET_SUMMARY = 'Resumen por Área';
 const SHEET_HISTORY = 'Historial de Giros';
 const TIMEZONE = 'America/Bogota';
+const MAX_SPINS_PER_PERSON = 2;
+const AREA_HARD_CAPS = { 'A&B': 4 };
 
 const COLOR_PALETTE = [
-  { bg: '#DCFCE7', fg: '#14532D' }, // 0 Emerald
-  { bg: '#FEE2E2', fg: '#7F1D1D' }, // 1 Crimson
-  { bg: '#FEF3C7', fg: '#78350F' }, // 2 Amber
-  { bg: '#E0F2FE', fg: '#0C4A6E' }, // 3 Sapphire
-  { bg: '#CCFBF1', fg: '#134E4A' }, // 4 Teal
-  { bg: '#FFEDD5', fg: '#7C2D12' }, // 5 Terracotta
-  { bg: '#DBEAFE', fg: '#1E3A8A' }, // 6 Indigo
-  { bg: '#ECFCCB', fg: '#365314' }  // 7 Olive
+  { bg: '#DCFCE7', fg: '#14532D' }, // 0 Esmeralda
+  { bg: '#FEE2E2', fg: '#7F1D1D' }, // 1 Carmesí
+  { bg: '#FEF3C7', fg: '#78350F' }, // 2 Ámbar
+  { bg: '#E0F2FE', fg: '#0C4A6E' }, // 3 Zafiro
+  { bg: '#CCFBF1', fg: '#134E4A' }, // 4 Turquesa
+  { bg: '#FFEDD5', fg: '#7C2D12' }, // 5 Terracota
+  { bg: '#DBEAFE', fg: '#1E3A8A' }, // 6 Azul Rey
+  { bg: '#ECFCCB', fg: '#365314' }  // 7 Oliva
 ];
 
 const DEFAULT_OPTIONS = [
-  { id: '0', label: '23 y 24 de diciembre', shortLabel: '23 y 24 Dic', days: 'Mié 23 – Jue 24 Dic 2026', seasonTag: 'Nochebuena', colorIndex: 0 },
-  { id: '1', label: '25 y 26 de diciembre', shortLabel: '25 y 26 Dic', days: 'Vie 25 – Sáb 26 Dic 2026', seasonTag: 'Navidad',    colorIndex: 1 },
-  { id: '2', label: '30 y 31 de diciembre', shortLabel: '30 y 31 Dic', days: 'Mié 30 – Jue 31 Dic 2026', seasonTag: 'Fin de Año', colorIndex: 2 },
-  { id: '3', label: '01 y 02 de enero',     shortLabel: '01 y 02 Ene', days: 'Vie 01 – Sáb 02 Ene 2027', seasonTag: 'Año Nuevo',  colorIndex: 3 }
+  { id: '0', label: '23 y 24 de diciembre',          shortLabel: '23 y 24 Dic',     days: 'Mié 23 – Jue 24 Dic 2026',     seasonTag: 'Nochebuena', colorIndex: 0 },
+  { id: '1', label: '24 y 25 de diciembre',          shortLabel: '24 y 25 Dic',     days: 'Jue 24 – Vie 25 Dic 2026',     seasonTag: 'Navidad',    colorIndex: 6 },
+  { id: '2', label: '25 y 26 de diciembre',          shortLabel: '25 y 26 Dic',     days: 'Vie 25 – Sáb 26 Dic 2026',     seasonTag: 'Navidad',    colorIndex: 1 },
+  { id: '3', label: '30 y 31 de diciembre',          shortLabel: '30 y 31 Dic',     days: 'Mié 30 – Jue 31 Dic 2026',     seasonTag: 'Fin de Año', colorIndex: 4 },
+  { id: '4', label: '31 de diciembre y 01 de enero', shortLabel: '31 Dic y 01 Ene', days: 'Jue 31 Dic – Vie 01 Ene 2027', seasonTag: 'Año Nuevo',  colorIndex: 2 },
+  { id: '5', label: '01 y 02 de enero',              shortLabel: '01 y 02 Ene',     days: 'Vie 01 – Sáb 02 Ene 2027',     seasonTag: 'Año Nuevo',  colorIndex: 3 }
 ];
+
+// Fecha manual exclusiva que NO aparece en la ruleta (solo para GARCIA CARMONA SANTIAGO)
+const EXCLUSIVE_MANUAL_OPTIONS = [
+  {
+    id: 'manual_26_27_dic',
+    label: '26 y 27 de diciembre',
+    shortLabel: '26 y 27 Dic',
+    days: 'Sáb 26 – Dom 27 Dic 2026',
+    seasonTag: 'Manual exclusivo',
+    colorIndex: 5,
+    bg: '#FFEDD5',
+    fg: '#7C2D12',
+    exclusiveManual: true,
+    exclusiveEmpId: 25
+  }
+];
+
+const PRE_REGISTERED_MANUAL = [
+  { empId: 4,  area: 'Administrativa', name: 'FRANCO OSPINA DIEGO ALEJANDRO',      optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+  { empId: 5,  area: 'Administrativa', name: 'DIAZ BOHORQUEZ NINI JOHANA',         optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
+  { empId: 2,  area: 'Administrativa', name: 'CASTRO VALENCIA ANDRES DAVID',       optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+  { empId: 1,  area: 'Administrativa', name: 'SALAS HERNANDEZ JHONATAN JAVIER',    optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
+  { empId: 15, area: 'A&B',            name: 'RENDON MEJIA PABLO ANDRES',          optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
+  { empId: 41, area: 'Mantenimiento',  name: 'GOMEZ CALDERON ROBIRIO ANTONIO',     optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+  { empId: 12, area: 'Ama de Llaves',  name: 'VILLA GONZALEZ BLANCA ALICIA',       optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+  { empId: 29, area: 'A&B',            name: 'ALVAREZ SEPULVEDA WILSON ALEXANDER', optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
+  { empId: 28, area: 'A&B',            name: 'MORALES HENAO RAUL SANTIAGO',        optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' },
+  { empId: 20, area: 'A&B',            name: 'RIOS GARCIA CAROLINA',               optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
+  { empId: 25, area: 'A&B',            name: 'GARCIA CARMONA SANTIAGO',            optionId: 'manual_26_27_dic', label: '26 y 27 de diciembre',          reason: 'Pre-registrado (fecha exclusiva)', exclusiveManual: true },
+  { empId: 17, area: 'A&B',            name: 'MARIN VELASQUEZ JUAN PABLO',         optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
+  { empId: 3,  area: 'Administrativa', name: 'LOPEZ BEDOYA ANA MARIA',             optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' }
+];
+
+function isPreRegisteredId_(empId) {
+  const target = Number(empId);
+  for (let i = 0; i < PRE_REGISTERED_MANUAL.length; i++) {
+    if (PRE_REGISTERED_MANUAL[i].empId === target) return true;
+  }
+  return false;
+}
 
 function getSpreadsheet_() {
   const active = SpreadsheetApp.getActiveSpreadsheet();
@@ -53,7 +97,9 @@ function jsonResponse_(payload) {
 }
 
 function enrichOption_(opt, fallbackIdx) {
-  const idx = Number.isInteger(Number(opt.colorIndex)) ? Math.abs(Number(opt.colorIndex)) % COLOR_PALETTE.length : (fallbackIdx % COLOR_PALETTE.length);
+  const idx = Number.isInteger(Number(opt.colorIndex))
+    ? Math.abs(Number(opt.colorIndex)) % COLOR_PALETTE.length
+    : (fallbackIdx % COLOR_PALETTE.length);
   const pal = COLOR_PALETTE[idx];
   return {
     id: String(opt.id !== undefined ? opt.id : fallbackIdx),
@@ -63,18 +109,26 @@ function enrichOption_(opt, fallbackIdx) {
     seasonTag: String(opt.seasonTag || '').trim(),
     colorIndex: idx,
     bg: opt.bg || pal.bg,
-    fg: opt.fg || pal.fg
+    fg: opt.fg || pal.fg,
+    exclusiveManual: Boolean(opt.exclusiveManual)
   };
 }
 
 function getOptions_() {
   const props = PropertiesService.getDocumentProperties();
+  const migratedV4 = props.getProperty('RULETA_V4_MIGRATED') === '1';
   try {
     const raw = props.getProperty('RULETA_OPTIONS');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed) && parsed.length >= 2) {
-        return parsed.map(function (o, i) { return enrichOption_(o, i); });
+        const legacy4 = ['23 y 24 de diciembre', '25 y 26 de diciembre', '30 y 31 de diciembre', '01 y 02 de enero'];
+        const isLegacy4 = !migratedV4 && parsed.length === 4 && parsed.every(function (o, i) {
+          return o && String(o.label || '').trim().toLowerCase() === legacy4[i];
+        });
+        if (!isLegacy4) {
+          return parsed.map(function (o, i) { return enrichOption_(o, i); });
+        }
       }
     }
   } catch (_) {}
@@ -91,8 +145,8 @@ function getSettings_(options) {
   } else if (storedMode === 'balanced') {
     mode = 'balanced';
   }
-  let quotas = {};
-  const defaultPerOpt = Math.ceil(44 / Math.max(1, options.length));
+  const quotas = {};
+  const defaultPerOpt = Math.ceil(43 / Math.max(1, options.length));
   options.forEach(function (o) { quotas[o.id] = defaultPerOpt; });
 
   try {
@@ -115,7 +169,7 @@ function getSettings_(options) {
   return { mode: mode, quotas: quotas, version: version };
 }
 
-function waterFill_(counts, pending) {
+function waterFill_(counts, pending, hardCap) {
   const k = counts.length;
   if (k === 0) {
     return { level: 0, baseNeed: [], extrasLeft: 0, eligibleForExtra: [], minAfterBase: [] };
@@ -129,9 +183,20 @@ function waterFill_(counts, pending) {
       minAfterBase: counts.slice()
     };
   }
+
+  let capCapacity = 0;
+  const hasCap = hardCap !== null && hardCap !== undefined && isFinite(hardCap);
+  if (hasCap) {
+    for (let j = 0; j < k; j++) {
+      if (counts[j] < hardCap) capCapacity += (hardCap - counts[j]);
+    }
+  }
+  const useCap = hasCap && capCapacity >= pending;
+
   let L = Math.min.apply(null, counts);
   while (true) {
     const nextL = L + 1;
+    if (useCap && nextL > hardCap) break;
     let needed = 0;
     for (let j = 0; j < k; j++) {
       if (counts[j] < nextL) needed += (nextL - counts[j]);
@@ -151,7 +216,7 @@ function waterFill_(counts, pending) {
     baseNeed.push(need);
     baseSum += need;
     minAfterBase.push(counts[j] + need);
-    eligibleForExtra.push(counts[j] <= L);
+    eligibleForExtra.push(counts[j] <= L && (!useCap || (L + 1) <= hardCap));
   }
   return {
     level: L,
@@ -261,7 +326,7 @@ function minCostBalance_(activeAreas, minFinal, numOptions) {
   return baseSqSum + addedCost;
 }
 
-function computeEquityModel_(options, employees, assignments) {
+function computeEquityModel_(options, employees, assignments, pendingSpins, excludeEmpId) {
   const k = options.length;
   const optIndexById = {};
   for (let idx = 0; idx < k; idx++) {
@@ -270,21 +335,27 @@ function computeEquityModel_(options, employees, assignments) {
 
   const areaList = [];
   const areaMap = {};
+  const pSpins = pendingSpins || {};
   for (let i = 0; i < employees.length; i++) {
     const emp = employees[i];
     const area = emp.area || 'General';
     if (!areaMap[area]) {
       const zeros = [];
       for (let j = 0; j < k; j++) zeros.push(0);
-      areaMap[area] = { area: area, total: 0, pending: 0, counts: zeros };
+      areaMap[area] = { area: area, total: 0, exclusiveAssigned: 0, pending: 0, counts: zeros };
       areaList.push(areaMap[area]);
     }
     const entry = areaMap[area];
     entry.total++;
-    const rec = assignments[emp.id];
-    const optIdx = rec && optIndexById[String(rec.optionId)] !== undefined ? optIndexById[String(rec.optionId)] : -1;
-    if (optIdx >= 0) {
-      entry.counts[optIdx]++;
+    const isExcluded = excludeEmpId !== null && excludeEmpId !== undefined && Number(emp.id) === Number(excludeEmpId);
+    const rec = isExcluded ? null : (assignments[emp.id] || pSpins[emp.id] || null);
+    if (rec) {
+      const optIdx = optIndexById[String(rec.optionId)] !== undefined ? optIndexById[String(rec.optionId)] : -1;
+      if (optIdx >= 0) {
+        entry.counts[optIdx]++;
+      } else {
+        entry.exclusiveAssigned++;
+      }
     } else {
       entry.pending++;
     }
@@ -294,9 +365,18 @@ function computeEquityModel_(options, employees, assignments) {
   for (let j = 0; j < k; j++) minFinal.push(0);
 
   const areaStates = areaList.map(function (entry) {
-    const wf = waterFill_(entry.counts, entry.pending);
+    const hardCap = AREA_HARD_CAPS[entry.area] !== undefined ? AREA_HARD_CAPS[entry.area] : null;
+    const wf = waterFill_(entry.counts, entry.pending, hardCap);
     for (let j = 0; j < k; j++) minFinal[j] += wf.minAfterBase[j];
-    return { area: entry.area, total: entry.total, pending: entry.pending, counts: entry.counts, wf: wf };
+    return {
+      area: entry.area,
+      total: entry.total,
+      exclusiveAssigned: entry.exclusiveAssigned,
+      pending: entry.pending,
+      counts: entry.counts,
+      hardCap: hardCap,
+      wf: wf
+    };
   });
 
   const activeExtraAreas = [];
@@ -360,17 +440,21 @@ function computeEquityModel_(options, employees, assignments) {
     }
 
     const weightsById = {};
+    const countsById = {};
     for (let j = 0; j < k; j++) {
       const optId = String(options[j].id);
       const extraShare = feasibleMap[j] && feasibleExtras.length > 0
         ? (a.wf.extrasLeft / feasibleExtras.length)
         : 0;
       weightsById[optId] = a.wf.baseNeed[j] + extraShare;
+      countsById[optId] = a.counts[j];
     }
 
     byArea[a.area] = {
       area: a.area,
       pending: a.pending,
+      hardCap: a.hardCap,
+      countsById: countsById,
       weightsById: weightsById
     };
   }
@@ -393,6 +477,23 @@ function findOptionById_(options, id) {
   return null;
 }
 
+function findExclusiveOptionById_(id) {
+  const key = String(id);
+  for (let i = 0; i < EXCLUSIVE_MANUAL_OPTIONS.length; i++) {
+    if (String(EXCLUSIVE_MANUAL_OPTIONS[i].id) === key) return enrichOption_(EXCLUSIVE_MANUAL_OPTIONS[i], 5);
+  }
+  return null;
+}
+
+function findExclusiveOptionByLabel_(label) {
+  const clean = String(label || '').trim().toLowerCase();
+  if (!clean) return null;
+  for (let i = 0; i < EXCLUSIVE_MANUAL_OPTIONS.length; i++) {
+    if (EXCLUSIVE_MANUAL_OPTIONS[i].label.toLowerCase() === clean) return enrichOption_(EXCLUSIVE_MANUAL_OPTIONS[i], 5);
+  }
+  return null;
+}
+
 function findOptionByLabel_(options, label) {
   const clean = String(label || '').trim().toLowerCase();
   if (!clean || clean === 'pendiente') return null;
@@ -400,6 +501,23 @@ function findOptionByLabel_(options, label) {
     if (options[i].label.toLowerCase() === clean) return options[i];
   }
   return null;
+}
+
+function findAnyOptionByLabel_(options, label, fallbackDays) {
+  const clean = String(label || '').trim();
+  if (!clean || clean.toLowerCase() === 'pendiente') return null;
+  const active = findOptionByLabel_(options, clean);
+  if (active) return active;
+  const excl = findExclusiveOptionByLabel_(clean);
+  if (excl) return excl;
+  return enrichOption_({
+    id: 'manual_' + clean.toLowerCase().replace(/[^a-z0-9]+/g, '_'),
+    label: clean,
+    days: fallbackDays || '—',
+    seasonTag: 'Manual exclusivo',
+    colorIndex: 5,
+    exclusiveManual: true
+  }, 5);
 }
 
 function colLetter_(idx0) {
@@ -438,35 +556,55 @@ function rebuildSummarySheet_(ss, options) {
   }
   sumSheet.clear();
 
-  // Gather unique areas from Descansos Quirama
   const areas = [];
+  const activeLowerSet = {};
+  options.forEach(function (o) { activeLowerSet[o.label.toLowerCase()] = true; });
+  const exclusiveLabels = [];
+
   if (mainSheet && mainSheet.getLastRow() >= 4) {
-    const areaVals = mainSheet.getRange(4, 2, mainSheet.getLastRow() - 3, 1).getDisplayValues();
-    for (let i = 0; i < areaVals.length; i++) {
-      const a = String(areaVals[i][0] || '').trim();
+    const vals = mainSheet.getRange(4, 2, mainSheet.getLastRow() - 3, 3).getDisplayValues();
+    for (let i = 0; i < vals.length; i++) {
+      const a = String(vals[i][0] || '').trim();
+      const dLabel = String(vals[i][2] || '').trim();
       if (a && areas.indexOf(a) === -1) areas.push(a);
+      if (dLabel && dLabel.toLowerCase() !== 'pendiente' && !activeLowerSet[dLabel.toLowerCase()]) {
+        if (exclusiveLabels.indexOf(dLabel) === -1) exclusiveLabels.push(dLabel);
+      }
     }
   }
   if (areas.length === 0) areas.push('General');
 
-  const headers = ['Área'].concat(options.map(function (o) { return o.label; })).concat(['Pendiente', 'Total']);
+  const headers = ['Área']
+    .concat(options.map(function (o) { return o.label; }))
+    .concat(exclusiveLabels)
+    .concat(['Pendiente', 'Total']);
   const totalCols = headers.length;
   const lastColLetter = colLetter_(totalCols - 1);
   const lastSumColLetter = colLetter_(totalCols - 2);
+  const exclStartCol = 2 + options.length; // 1-indexed
 
   sumSheet.getRange('A1:' + lastColLetter + '1').merge()
     .setValue('RESUMEN DE DESCANSOS POR ÁREA Y FECHA — QUIRAMA 2026')
     .setBackground('#14532D').setFontColor('#FFFFFF').setFontWeight('bold').setFontSize(13).setHorizontalAlignment('center').setVerticalAlignment('center');
   sumSheet.setRowHeight(1, 28);
 
+  const subText = exclusiveLabels.length > 0
+    ? 'Fórmulas vinculadas a "Descansos Quirama" · A&B máx. 4/fecha en ruleta (columna naranja = fecha manual exclusiva fuera de ruleta)'
+    : 'Fórmulas vinculadas automáticamente a la hoja "Descansos Quirama"';
   sumSheet.getRange('A2:' + lastColLetter + '2').merge()
-    .setValue('Fórmulas vinculadas automáticamente a la hoja "Descansos Quirama"')
+    .setValue(subText)
     .setBackground('#ECFDF5').setFontColor('#4B5563').setFontStyle('italic').setHorizontalAlignment('center').setVerticalAlignment('center');
   sumSheet.setRowHeight(2, 20);
 
   sumSheet.getRange(3, 1, 1, totalCols).setValues([headers])
     .setBackground('#166534').setFontColor('#FFFFFF').setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('center').setWrap(true);
-  sumSheet.setRowHeight(3, 26);
+  for (let e = 0; e < exclusiveLabels.length; e++) {
+    sumSheet.getRange(3, exclStartCol + e)
+      .setBackground('#9A3412')
+      .setFontColor('#FFFFFF')
+      .setNote('Fecha manual exclusiva (NO aparece en la ruleta)');
+  }
+  sumSheet.setRowHeight(3, 28);
 
   const areaStart = 4;
   const areaEnd = areaStart + areas.length - 1;
@@ -475,35 +613,35 @@ function rebuildSummarySheet_(ss, options) {
 
   for (let i = 0; i < areas.length; i++) {
     const r = areaStart + i;
-    const rowFormulas = [areas[i]];
+    const rowFormulas = [];
     for (let c = 1; c <= totalCols - 2; c++) {
       const colL = colLetter_(c);
       rowFormulas.push('=COUNTIFS(' + rangeArea + ',$A' + r + ',' + rangeDate + ',' + colL + '$3)');
     }
     rowFormulas.push('=SUM(B' + r + ':' + lastSumColLetter + r + ')');
-    sumSheet.getRange(r, 1, 1, totalCols).setValues([rowFormulas]);
-    sumSheet.getRange(r, 2, 1, totalCols - 1).setHorizontalAlignment('center');
+    sumSheet.getRange(r, 1).setValue(areas[i]);
+    sumSheet.getRange(r, 2, 1, totalCols - 1).setFormulas([rowFormulas]).setHorizontalAlignment('center');
     sumSheet.getRange(r, totalCols).setBackground('#DCFCE7').setFontColor('#14532D').setFontWeight('bold');
   }
 
   const totalRow = areaEnd + 1;
-  const totalFormulas = ['TOTAL GENERAL'];
+  const totalFormulas = [];
   for (let c = 1; c < totalCols; c++) {
     const colL = colLetter_(c);
     totalFormulas.push('=SUM(' + colL + areaStart + ':' + colL + areaEnd + ')');
   }
-  sumSheet.getRange(totalRow, 1, 1, totalCols).setValues([totalFormulas])
-    .setBackground('#DCFCE7').setFontColor('#14532D').setFontWeight('bold');
-  sumSheet.getRange(totalRow, 2, 1, totalCols - 1).setHorizontalAlignment('center');
+  sumSheet.getRange(totalRow, 1).setValue('TOTAL GENERAL');
+  sumSheet.getRange(totalRow, 2, 1, totalCols - 1).setFormulas([totalFormulas]).setHorizontalAlignment('center');
+  sumSheet.getRange(totalRow, 1, 1, totalCols).setBackground('#DCFCE7').setFontColor('#14532D').setFontWeight('bold');
 
   const pctRow = totalRow + 1;
-  const pctFormulas = ['% del total de colaboradores'];
+  const pctFormulas = [];
   for (let c = 1; c < totalCols; c++) {
     const colL = colLetter_(c);
     pctFormulas.push('=IF($' + lastColLetter + '$' + totalRow + '>0,' + colL + totalRow + '/$' + lastColLetter + '$' + totalRow + ',0)');
   }
-  sumSheet.getRange(pctRow, 1, 1, totalCols).setValues([pctFormulas]);
-  sumSheet.getRange(pctRow, 2, 1, totalCols - 1).setNumberFormat('0.0%').setHorizontalAlignment('center');
+  sumSheet.getRange(pctRow, 1).setValue('% del total de colaboradores');
+  sumSheet.getRange(pctRow, 2, 1, totalCols - 1).setFormulas([pctFormulas]).setNumberFormat('0.0%').setHorizontalAlignment('center');
 
   sumSheet.getRange(3, 1, pctRow - 2, totalCols).setBorder(true, true, true, true, true, true, '#D1D5DB', SpreadsheetApp.BorderStyle.SOLID);
   sumSheet.setColumnWidth(1, 220);
@@ -513,18 +651,14 @@ function rebuildSummarySheet_(ss, options) {
 }
 
 function updateBanner_(mainSheet, totalEmps, assignedCount, settings, options) {
-  const pct = options.length > 0 ? Math.round((100 / options.length) * 10) / 10 : 25;
-  const k = Math.max(1, options.length);
-  const gMin = Math.floor(totalEmps / k);
-  const gMax = Math.ceil(totalEmps / k);
-  const gRange = gMin === gMax ? String(gMin) : (gMin + '–' + gMax);
+  const pct = options.length > 0 ? Math.round((100 / options.length) * 10) / 10 : 16.7;
   const modeDesc = settings.mode === 'area_balanced'
-    ? 'Equitativo estricto por área y fecha (' + gRange + '/fecha)'
+    ? 'Equitativo estricto por área (A&B máx. 4/fecha · Hasta 2 tiros)'
     : (settings.mode === 'balanced'
         ? 'Cupos globales (' + options.map(function (o) { return settings.quotas[o.id] || 0; }).join(' / ') + ')'
         : 'Azar libre (' + pct + '% cada fecha)');
   const text = 'Actualizado: ' + formatNowBogota_() +
-    '  |  Sorteados: ' + assignedCount + ' de ' + totalEmps +
+    '  |  Asignados: ' + assignedCount + ' de ' + totalEmps +
     '  |  Modo: ' + modeDesc;
   mainSheet.getRange('A2').setValue(text);
 }
@@ -540,6 +674,7 @@ function readFullState_(ss) {
   const lastRow = mainSheet.getLastRow();
   const employees = [];
   const assignments = {};
+  const pendingSpins = {};
   let maxId = 0;
 
   if (lastRow >= 4) {
@@ -552,25 +687,46 @@ function readFullState_(ss) {
       if (id > maxId) maxId = id;
       const area = String(row[1] || '').trim() || 'General';
       const dateLabel = String(row[3] || '').trim();
+      const daysText = String(row[4] || '').trim();
       const statusText = String(row[5] || '').trim();
+      const statusLower = statusText.toLowerCase();
       const ts = String(row[6] || '').trim();
 
       employees.push({ id: id, area: area, name: name });
 
-      const opt = findOptionByLabel_(options, dateLabel);
+      const opt = findAnyOptionByLabel_(options, dateLabel, daysText);
       if (opt) {
-        const isManual = statusText.toLowerCase().indexOf('manual') >= 0;
-        let manualReason = '';
-        if (isManual && statusText.indexOf('—') >= 0) {
-          manualReason = statusText.split('—').slice(1).join('—').trim();
+        if (statusLower.indexOf('por confirmar') >= 0) {
+          pendingSpins[id] = {
+            optionId: opt.id,
+            optionLabel: opt.label,
+            optionDays: opt.days,
+            timestamp: ts || '',
+            mode: settings.mode,
+            spinCount: 1
+          };
+        } else {
+          const isManual = statusLower.indexOf('manual') >= 0 || isPreRegisteredId_(id);
+          const isPre = isPreRegisteredId_(id) || statusLower.indexOf('pre-registrado') >= 0;
+          let manualReason = '';
+          if (isManual && statusText.indexOf('—') >= 0) {
+            manualReason = statusText.split('—').slice(1).join('—').trim();
+          }
+          const spinCount = isManual ? 0 : (statusLower.indexOf('2/2') >= 0 ? 2 : 1);
+          assignments[id] = {
+            optionId: opt.id,
+            optionLabel: opt.label,
+            optionDays: opt.days,
+            timestamp: ts || '',
+            mode: isManual ? 'manual' : settings.mode,
+            isManual: isManual,
+            isPreRegistered: isPre,
+            exclusiveManual: Boolean(opt.exclusiveManual),
+            manualReason: manualReason,
+            spinCount: spinCount,
+            finalized: true
+          };
         }
-        assignments[id] = {
-          optionId: opt.id,
-          timestamp: ts || '',
-          mode: isManual ? 'manual' : settings.mode,
-          isManual: isManual,
-          manualReason: manualReason
-        };
       }
     }
   }
@@ -584,7 +740,7 @@ function readFullState_(ss) {
       const hName = String(r[2] || '').trim();
       const label = String(r[4] || '').trim();
       if (!hName || !label) continue;
-      const opt = findOptionByLabel_(options, label);
+      const opt = findAnyOptionByLabel_(options, label, '');
       const modeCell = String(r[5] || '');
       const modeLower = modeCell.toLowerCase();
       const hManual = modeLower.indexOf('manual') >= 0;
@@ -593,6 +749,13 @@ function readFullState_(ss) {
         : (modeLower.indexOf('área') >= 0 || modeLower.indexOf('area') >= 0
             ? 'area_balanced'
             : (modeLower.indexOf('cupo') >= 0 ? 'balanced' : 'equal'));
+      const spinOutcome = hManual
+        ? 'manual'
+        : (modeLower.indexOf('por confirmar') >= 0
+            ? 'provisional'
+            : (modeLower.indexOf('descartado') >= 0
+                ? 'discarded'
+                : (modeLower.indexOf('2/2') >= 0 ? 'second_final' : 'kept')));
       history.push({
         order: Number(r[0]) || (i + 1),
         timestamp: String(r[1] || '').trim(),
@@ -602,6 +765,7 @@ function readFullState_(ss) {
         optionLabel: label,
         mode: parsedMode,
         isManual: hManual,
+        spinOutcome: spinOutcome,
         modeText: modeCell
       });
     }
@@ -609,7 +773,7 @@ function readFullState_(ss) {
 
   return {
     ok: true,
-    scriptVersion: 3,
+    scriptVersion: 4,
     serverTime: new Date().toISOString(),
     version: settings.version,
     options: options,
@@ -618,6 +782,7 @@ function readFullState_(ss) {
     nextEmpId: maxId + 1,
     employees: employees,
     assignments: assignments,
+    pendingSpins: pendingSpins,
     history: history,
     sheetUrl: ss.getUrl()
   };
@@ -635,11 +800,14 @@ function findEmployeeRow_(mainSheet, empId) {
   return -1;
 }
 
-function applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, isManual, manualReason) {
+function applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, isManual, manualReason, customStatus) {
   const reasonClean = String(manualReason || '').trim();
-  const statusVal = isManual
-    ? (reasonClean ? 'Manual (sin ruleta) — ' + reasonClean : 'Manual (sin ruleta)')
-    : 'Asignado';
+  const statusVal = customStatus
+    ? String(customStatus)
+    : (isManual
+        ? (reasonClean ? 'Manual (sin ruleta) — ' + reasonClean : 'Manual (sin ruleta)')
+        : 'Asignado');
+  const isProvisional = statusVal.toLowerCase().indexOf('por confirmar') >= 0;
   mainSheet.getRange(rowNum, 4, 1, 4).setValues([[
     opt.label,
     opt.days || '—',
@@ -654,8 +822,8 @@ function applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, isManual, ma
     .setHorizontalAlignment('center');
   mainSheet.getRange(rowNum, 5).setHorizontalAlignment('center');
   mainSheet.getRange(rowNum, 6)
-    .setBackground(isManual ? '#FEF3C7' : '#DCFCE7')
-    .setFontColor(isManual ? '#78350F' : '#14532D')
+    .setBackground(isManual || isProvisional ? '#FEF3C7' : '#DCFCE7')
+    .setFontColor(isManual || isProvisional ? '#78350F' : '#14532D')
     .setFontWeight('bold')
     .setFontStyle('normal')
     .setHorizontalAlignment('center');
@@ -685,7 +853,23 @@ function applyPendingToRow_(mainSheet, rowNum) {
   mainSheet.getRange(rowNum, 7).setHorizontalAlignment('center');
 }
 
-function hasPriorRouletteSpin_(histSheet, empName, options) {
+function appendHistoryRow_(histSheet, tsFormatted, empName, empArea, opt, modeLabel, isAmber) {
+  const nextOrder = Math.max(1, histSheet.getLastRow() - 1);
+  const newHistRow = histSheet.getLastRow() + 1;
+  histSheet.getRange(newHistRow, 1, 1, 6).setValues([[
+    nextOrder, tsFormatted, empName, empArea, opt.label, modeLabel
+  ]]);
+  histSheet.getRange(newHistRow, 1).setHorizontalAlignment('center');
+  histSheet.getRange(newHistRow, 2).setHorizontalAlignment('center');
+  histSheet.getRange(newHistRow, 5).setBackground(opt.bg).setFontColor(opt.fg).setFontWeight('bold').setHorizontalAlignment('center');
+  histSheet.getRange(newHistRow, 6)
+    .setBackground(isAmber ? '#FEF3C7' : '#FFFFFF')
+    .setFontColor(isAmber ? '#78350F' : '#1F2937')
+    .setFontWeight(isAmber ? 'bold' : 'normal')
+    .setHorizontalAlignment('center');
+}
+
+function hasFinalizedRouletteSpin_(histSheet, empName, options) {
   if (!histSheet || histSheet.getLastRow() < 3) return null;
   const target = String(empName || '').trim().toUpperCase();
   if (!target) return null;
@@ -695,7 +879,7 @@ function hasPriorRouletteSpin_(histSheet, empName, options) {
     const hName = String(r[2] || '').trim().toUpperCase();
     const hLabel = String(r[4] || '').trim();
     const hMode = String(r[5] || '').toLowerCase();
-    if (hName === target && hMode.indexOf('manual') < 0) {
+    if (hName === target && hMode.indexOf('manual') < 0 && hMode.indexOf('por confirmar') < 0 && hMode.indexOf('descartado') < 0) {
       const matched = findOptionByLabel_(options, hLabel);
       if (matched) return matched;
     }
@@ -726,20 +910,18 @@ function doPost(e) {
     if (action === 'recordSpin') {
       const empId = Number(body.empId);
       const isManual = Boolean(body.isManual) || body.mode === 'manual';
-      // Solo se permite sobrescribir mediante asignación manual explícita; la ruleta es 1 giro único por persona.
+      const spinNumber = isManual ? 0 : (Number(body.spinNumber) === 2 ? 2 : 1);
+      const isProvisional = !isManual && spinNumber === 1 && Boolean(body.provisional);
       const allowOverwrite = isManual && Boolean(body.forceOverwrite);
-      let opt = findOptionById_(options, body.optionId);
+
+      let opt = findOptionById_(options, body.optionId) || findExclusiveOptionById_(body.optionId);
       if (!opt && body.optionLabel) {
-        opt = findOptionByLabel_(options, body.optionLabel) || enrichOption_({
-          id: String(body.optionId || 'custom'),
-          label: body.optionLabel,
-          days: body.optionDays || '—',
-          bg: body.optionBg || '#DCFCE7',
-          fg: body.optionFg || '#14532D',
-          colorIndex: Number(body.colorIndex) || 0
-        }, 0);
+        opt = findAnyOptionByLabel_(options, body.optionLabel, body.optionDays);
       }
       if (!opt) return jsonResponse_({ ok: false, error: 'Opción de fecha inválida.' });
+      if (!isManual && opt.exclusiveManual) {
+        return jsonResponse_({ ok: false, error: 'Esa fecha es exclusiva manual y no participa en la ruleta.' });
+      }
 
       const rowNum = findEmployeeRow_(mainSheet, empId);
       if (rowNum < 0) return jsonResponse_({ ok: false, error: 'Colaborador no encontrado en la hoja.' });
@@ -747,18 +929,23 @@ function doPost(e) {
       const empArea = String(mainSheet.getRange(rowNum, 2).getDisplayValue() || '').trim();
       const empName = String(mainSheet.getRange(rowNum, 3).getDisplayValue() || '').trim();
       const currentDateLabel = String(mainSheet.getRange(rowNum, 4).getDisplayValue() || '').trim();
-      const existingOpt = findOptionByLabel_(options, currentDateLabel);
-      const priorSpinOpt = !isManual ? hasPriorRouletteSpin_(histSheet, empName, options) : null;
+      const currentStatus = String(mainSheet.getRange(rowNum, 6).getDisplayValue() || '').trim();
+      const currentStatusLower = currentStatus.toLowerCase();
+      const isCurrentlyProvisional = currentStatusLower.indexOf('por confirmar') >= 0;
+      const existingOpt = findAnyOptionByLabel_(options, currentDateLabel, '');
+      const finalizedPrior = !isManual ? hasFinalizedRouletteSpin_(histSheet, empName, options) : null;
 
-      if (!allowOverwrite && (existingOpt || priorSpinOpt)) {
-        const lockedOpt = existingOpt || priorSpinOpt;
+      // Allow spinNumber 2 to replace a provisional Spin 1; reject finalized turns or locked pre-registered people
+      const canReplaceProvisional = !isManual && spinNumber === 2 && isCurrentlyProvisional;
+      if (!allowOverwrite && !canReplaceProvisional && ((existingOpt && !isCurrentlyProvisional) || finalizedPrior || (!isManual && isPreRegisteredId_(empId)))) {
+        const lockedOpt = existingOpt || finalizedPrior;
         return jsonResponse_({
           ok: false,
           conflict: true,
           alreadySpun: true,
-          error: 'Esta persona ya tiró la ruleta. Solo se permite 1 giro por persona.',
-          existingOptionId: lockedOpt.id,
-          existingOptionLabel: lockedOpt.label,
+          error: 'Esta persona ya completó su turno definitivo (máx. ' + MAX_SPINS_PER_PERSON + ' tiros).',
+          existingOptionId: lockedOpt ? lockedOpt.id : '',
+          existingOptionLabel: lockedOpt ? lockedOpt.label : currentDateLabel,
           state: readFullState_(ss)
         });
       }
@@ -767,10 +954,13 @@ function doPost(e) {
       const effectiveMode = isManual ? 'manual' : (body.mode || settingsNow.mode || 'area_balanced');
       if (!isManual && (effectiveMode === 'area_balanced' || effectiveMode === 'balanced')) {
         const curState = readFullState_(ss);
+        const excludeId = spinNumber === 2 ? empId : null;
         if (effectiveMode === 'area_balanced') {
-          const eqModel = computeEquityModel_(options, curState.employees, curState.assignments);
+          const eqModel = computeEquityModel_(options, curState.employees, curState.assignments, curState.pendingSpins, excludeId);
           const areaObj = eqModel.byArea[empArea];
-          if (areaObj && areaObj.pending > 0 && (areaObj.weightsById[String(opt.id)] || 0) <= 1e-9) {
+          const hardCap = AREA_HARD_CAPS[empArea];
+          const hitsHardCap = hardCap !== undefined && areaObj && (areaObj.countsById[String(opt.id)] || 0) >= hardCap;
+          if (hitsHardCap || (areaObj && areaObj.pending > 0 && (areaObj.weightsById[String(opt.id)] || 0) <= 1e-9)) {
             return jsonResponse_({
               ok: false,
               quotaConflict: true,
@@ -782,7 +972,14 @@ function doPost(e) {
           const counts = {};
           options.forEach(function (o) { counts[o.id] = 0; });
           Object.keys(curState.assignments).forEach(function (kId) {
+            if (excludeId !== null && Number(kId) === Number(excludeId)) return;
             const r = curState.assignments[kId];
+            if (r && counts[String(r.optionId)] !== undefined) counts[String(r.optionId)]++;
+          });
+          Object.keys(curState.pendingSpins || {}).forEach(function (kId) {
+            if (curState.assignments[kId]) return;
+            if (excludeId !== null && Number(kId) === Number(excludeId)) return;
+            const r = curState.pendingSpins[kId];
             if (r && counts[String(r.optionId)] !== undefined) counts[String(r.optionId)]++;
           });
           let totalRem = 0;
@@ -804,31 +1001,73 @@ function doPost(e) {
 
       const tsFormatted = formatNowBogota_();
       const manualReason = String(body.manualReason || '').trim();
-      applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, isManual, manualReason);
+      const rowStatus = isManual
+        ? (manualReason ? 'Manual (sin ruleta) — ' + manualReason : 'Manual (sin ruleta)')
+        : (isProvisional
+            ? 'Tiro 1/2 (Por confirmar)'
+            : (spinNumber === 2 ? 'Asignado (Tiro 2/2)' : 'Asignado (Tiro 1/2)'));
 
-      const nextOrder = Math.max(1, histSheet.getLastRow() - 1);
+      applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, isManual, manualReason, rowStatus);
+
       const pct = Math.round((100 / Math.max(1, options.length)) * 10) / 10;
+      const modeBase = effectiveMode === 'area_balanced'
+        ? 'Equitativo por área y fecha'
+        : (effectiveMode === 'balanced' ? 'Cupos globales' : 'Azar libre (' + pct + '%)');
+
+      if (!isManual && spinNumber === 2 && body.firstSpinLabel && !isCurrentlyProvisional) {
+        const firstOpt = findAnyOptionByLabel_(options, body.firstSpinLabel, '');
+        if (firstOpt) {
+          appendHistoryRow_(histSheet, tsFormatted, empName, empArea, firstOpt, modeBase + ' · Tiro 1/2 (Descartado)', true);
+        }
+      }
+
       const modeLabel = isManual
         ? (manualReason ? 'Manual (sin ruleta) — ' + manualReason : 'Manual (sin ruleta)')
-        : (effectiveMode === 'area_balanced'
-            ? 'Equitativo por área y fecha'
-            : (effectiveMode === 'balanced' ? 'Cupos globales' : 'Azar libre (' + pct + '%)'));
-      const newHistRow = histSheet.getLastRow() + 1;
-      histSheet.getRange(newHistRow, 1, 1, 6).setValues([[
-        nextOrder, tsFormatted, empName, empArea, opt.label, modeLabel
-      ]]);
-      histSheet.getRange(newHistRow, 1).setHorizontalAlignment('center');
-      histSheet.getRange(newHistRow, 2).setHorizontalAlignment('center');
-      histSheet.getRange(newHistRow, 5).setBackground(opt.bg).setFontColor(opt.fg).setFontWeight('bold').setHorizontalAlignment('center');
-      histSheet.getRange(newHistRow, 6)
-        .setBackground(isManual ? '#FEF3C7' : '#FFFFFF')
-        .setFontColor(isManual ? '#78350F' : '#1F2937')
-        .setFontWeight(isManual ? 'bold' : 'normal')
-        .setHorizontalAlignment('center');
+        : (isProvisional
+            ? modeBase + ' · Tiro 1/2 (Por confirmar)'
+            : (spinNumber === 2
+                ? modeBase + ' · Tiro 2/2 (Definitivo)'
+                : modeBase + ' · Tiro 1/2 (Conservado)'));
+
+      appendHistoryRow_(histSheet, tsFormatted, empName, empArea, opt, modeLabel, isManual || isProvisional);
+
+      if (opt.exclusiveManual) {
+        rebuildSummarySheet_(ss, options);
+      }
 
       bumpVersion_();
       const freshState = readFullState_(ss);
       updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_(options), options);
+      return jsonResponse_({ ok: true, state: freshState });
+    }
+
+    if (action === 'confirmSpin') {
+      const empId = Number(body.empId);
+      const rowNum = findEmployeeRow_(mainSheet, empId);
+      if (rowNum < 0) return jsonResponse_({ ok: false, error: 'Colaborador no encontrado.' });
+      const empArea = String(mainSheet.getRange(rowNum, 2).getDisplayValue() || '').trim();
+      const empName = String(mainSheet.getRange(rowNum, 3).getDisplayValue() || '').trim();
+      const curDate = String(mainSheet.getRange(rowNum, 4).getDisplayValue() || '').trim();
+      const curStatus = String(mainSheet.getRange(rowNum, 6).getDisplayValue() || '').trim();
+      const opt = findOptionById_(options, body.optionId) || findOptionByLabel_(options, curDate);
+      if (!opt) return jsonResponse_({ ok: false, error: 'No hay un 1.er tiro válido para confirmar.' });
+
+      if (curStatus.toLowerCase().indexOf('por confirmar') < 0 && findOptionByLabel_(options, curDate)) {
+        return jsonResponse_({ ok: true, alreadyConfirmed: true, state: readFullState_(ss) });
+      }
+
+      const tsFormatted = formatNowBogota_();
+      applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, false, '', 'Asignado (Tiro 1/2)');
+
+      const settingsNow = getSettings_(options);
+      const modeBase = settingsNow.mode === 'area_balanced'
+        ? 'Equitativo por área y fecha'
+        : (settingsNow.mode === 'balanced' ? 'Cupos globales' : 'Azar libre');
+      appendHistoryRow_(histSheet, tsFormatted, empName, empArea, opt, modeBase + ' · Tiro 1/2 (Conservado)', false);
+
+      bumpVersion_();
+      const freshState = readFullState_(ss);
+      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, settingsNow, options);
       return jsonResponse_({ ok: true, state: freshState });
     }
 
@@ -840,6 +1079,7 @@ function doPost(e) {
       const nextOptions = incoming.map(function (o, i) { return enrichOption_(o, i); });
       const props = PropertiesService.getDocumentProperties();
       props.setProperty('RULETA_OPTIONS', JSON.stringify(nextOptions));
+      props.setProperty('RULETA_V4_MIGRATED', '1');
 
       const renamedMap = body.renamedMap || {};
       const deletedLabels = (Array.isArray(body.deletedLabels) ? body.deletedLabels : []).map(function (s) {
@@ -854,6 +1094,7 @@ function doPost(e) {
           const curLabel = String(rows[i][0] || '').trim();
           const curLower = curLabel.toLowerCase();
           if (!curLabel || curLower === 'pendiente') continue;
+          if (findExclusiveOptionByLabel_(curLabel)) continue;
 
           if (deletedLabels.indexOf(curLower) >= 0) {
             applyPendingToRow_(mainSheet, rNum);
@@ -872,12 +1113,11 @@ function doPost(e) {
             const wasManual = curStatus.toLowerCase().indexOf('manual') >= 0;
             const mSplit = curStatus.split('—');
             const prevReason = wasManual && mSplit.length > 1 ? mSplit.slice(1).join('—').trim() : '';
-            applyAssignmentToRow_(mainSheet, rNum, targetOpt, rows[i][3] || '', wasManual, prevReason);
+            applyAssignmentToRow_(mainSheet, rNum, targetOpt, rows[i][3] || '', wasManual, prevReason, curStatus || '');
           }
         }
       }
 
-      // Also update renamed labels in Historial de Giros
       if (histSheet.getLastRow() >= 3 && Object.keys(renamedMap).length > 0) {
         const hLabels = histSheet.getRange(3, 5, histSheet.getLastRow() - 2, 1).getDisplayValues();
         for (let i = 0; i < hLabels.length; i++) {
@@ -910,15 +1150,23 @@ function doPost(e) {
       const empId = Number(body.empId);
       const rowNum = findEmployeeRow_(mainSheet, empId);
       if (rowNum < 0) return jsonResponse_({ ok: false, error: 'Colaborador no encontrado.' });
+      if (isPreRegisteredId_(empId)) {
+        return jsonResponse_({
+          ok: false,
+          error: 'No se puede borrar un descanso manual pre-registrado y bloqueado.',
+          state: readFullState_(ss)
+        });
+      }
       const empName = String(mainSheet.getRange(rowNum, 3).getDisplayValue() || '').trim();
       const curDate = String(mainSheet.getRange(rowNum, 4).getDisplayValue() || '').trim();
       const curStatus = String(mainSheet.getRange(rowNum, 6).getDisplayValue() || '').toLowerCase();
       const hasExisting = Boolean(findOptionByLabel_(options, curDate));
-      const spunBefore = (hasExisting && curStatus.indexOf('manual') < 0) || Boolean(hasPriorRouletteSpin_(histSheet, empName, options));
+      const spunBefore = (hasExisting && curStatus.indexOf('manual') < 0 && curStatus.indexOf('por confirmar') < 0) ||
+        Boolean(hasFinalizedRouletteSpin_(histSheet, empName, options));
       if (spunBefore) {
         return jsonResponse_({
           ok: false,
-          error: 'No se puede borrar un giro de ruleta ya realizado. Solo se permite 1 giro por persona.',
+          error: 'No se puede borrar un turno definitivo ya completado en la ruleta.',
           state: readFullState_(ss)
         });
       }
@@ -977,32 +1225,49 @@ function doPost(e) {
       if (histSheet.getLastRow() >= 3) {
         histSheet.deleteRows(3, histSheet.getLastRow() - 2);
       }
+      // Restore the 13 locked pre-registered manual assignments
+      const tsFormatted = formatNowBogota_();
+      for (let i = 0; i < PRE_REGISTERED_MANUAL.length; i++) {
+        const pre = PRE_REGISTERED_MANUAL[i];
+        const rowNum = findEmployeeRow_(mainSheet, pre.empId);
+        if (rowNum < 0) continue;
+        const opt = findOptionById_(options, pre.optionId) || findAnyOptionByLabel_(options, pre.label, '');
+        if (!opt) continue;
+        applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, true, pre.reason);
+        appendHistoryRow_(histSheet, tsFormatted, pre.name, pre.area, opt, 'Manual (sin ruleta) — ' + pre.reason, true);
+      }
+      rebuildSummarySheet_(ss, options);
       bumpVersion_();
       const freshState = readFullState_(ss);
-      updateBanner_(mainSheet, freshState.employees.length, 0, getSettings_(options), options);
+      updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_(options), options);
       return jsonResponse_({ ok: true, state: freshState });
     }
 
     if (action === 'pushLocalProgress') {
       if (Array.isArray(body.options) && body.options.length >= 2) {
         options = body.options.map(function (o, i) { return enrichOption_(o, i); });
-        PropertiesService.getDocumentProperties().setProperty('RULETA_OPTIONS', JSON.stringify(options));
-        rebuildSummarySheet_(ss, options);
+        const props = PropertiesService.getDocumentProperties();
+        props.setProperty('RULETA_OPTIONS', JSON.stringify(options));
+        props.setProperty('RULETA_V4_MIGRATED', '1');
       }
       const localAssignments = body.assignments || {};
       const ids = Object.keys(localAssignments);
       for (let i = 0; i < ids.length; i++) {
         const empId = Number(ids[i]);
         const rec = localAssignments[empId];
-        const opt = rec ? findOptionById_(options, rec.optionId) : null;
+        if (!rec) continue;
+        const opt = findOptionById_(options, rec.optionId) || findExclusiveOptionById_(rec.optionId) || findAnyOptionByLabel_(options, rec.optionLabel, rec.optionDays);
         if (!opt) continue;
         const rowNum = findEmployeeRow_(mainSheet, empId);
         if (rowNum < 0) continue;
-        const existing = findOptionByLabel_(options, mainSheet.getRange(rowNum, 4).getDisplayValue());
+        const existing = findAnyOptionByLabel_(options, mainSheet.getRange(rowNum, 4).getDisplayValue(), '');
         if (!existing) {
-          applyAssignmentToRow_(mainSheet, rowNum, opt, formatNowBogota_(), Boolean(rec.isManual), rec.manualReason || '');
+          const isMan = Boolean(rec.isManual);
+          const spinStatus = isMan ? '' : (Number(rec.spinCount) === 2 ? 'Asignado (Tiro 2/2)' : 'Asignado (Tiro 1/2)');
+          applyAssignmentToRow_(mainSheet, rowNum, opt, formatNowBogota_(), isMan, rec.manualReason || '', spinStatus);
         }
       }
+      rebuildSummarySheet_(ss, options);
       bumpVersion_();
       const freshState = readFullState_(ss);
       updateBanner_(mainSheet, freshState.employees.length, Object.keys(freshState.assignments).length, getSettings_(options), options);
