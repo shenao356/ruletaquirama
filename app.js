@@ -80,16 +80,24 @@
   ];
 
   const DEFAULT_OPTIONS_RAW = [
-    { id: '0', label: '23 y 24 de diciembre',          shortLabel: '23 y 24 Dic',     days: 'Mié 23 – Jue 24 Dic 2026',     seasonTag: 'Nochebuena', colorIndex: 0 },
-    { id: '1', label: '24 y 25 de diciembre',          shortLabel: '24 y 25 Dic',     days: 'Jue 24 – Vie 25 Dic 2026',     seasonTag: 'Navidad',    colorIndex: 6 },
-    { id: '2', label: '25 y 26 de diciembre',          shortLabel: '25 y 26 Dic',     days: 'Vie 25 – Sáb 26 Dic 2026',     seasonTag: 'Navidad',    colorIndex: 1 },
-    { id: '3', label: '30 y 31 de diciembre',          shortLabel: '30 y 31 Dic',     days: 'Mié 30 – Jue 31 Dic 2026',     seasonTag: 'Fin de Año', colorIndex: 4 },
-    { id: '4', label: '31 de diciembre y 01 de enero', shortLabel: '31 Dic y 01 Ene', days: 'Jue 31 Dic – Vie 01 Ene 2027', seasonTag: 'Año Nuevo',  colorIndex: 2, wheelTop: '31 Dic y', wheelBottom: '01 ENERO' },
-    { id: '5', label: '01 y 02 de enero',              shortLabel: '01 y 02 Ene',     days: 'Vie 01 – Sáb 02 Ene 2027',     seasonTag: 'Año Nuevo',  colorIndex: 3 }
+    { id: '0', label: '23 y 24 de diciembre', shortLabel: '23 y 24 Dic', days: 'Mié 23 – Jue 24 Dic 2026', seasonTag: 'Nochebuena', colorIndex: 0 },
+    { id: '1', label: '25 y 26 de diciembre', shortLabel: '25 y 26 Dic', days: 'Vie 25 – Sáb 26 Dic 2026', seasonTag: 'Navidad',    colorIndex: 1 },
+    { id: '2', label: '30 y 31 de diciembre', shortLabel: '30 y 31 Dic', days: 'Mié 30 – Jue 31 Dic 2026', seasonTag: 'Fin de Año', colorIndex: 4 },
+    { id: '3', label: '01 y 02 de enero',     shortLabel: '01 y 02 Ene', days: 'Vie 01 – Sáb 02 Ene 2027', seasonTag: 'Año Nuevo',  colorIndex: 3 }
   ];
 
-  // Fecha manual exclusiva que NO aparece en la ruleta (solo para GARCIA CARMONA SANTIAGO)
+  // Fechas manuales exclusivas que NO aparecen en la ruleta (conservan intactos los pre-registrados manuales)
   const EXCLUSIVE_MANUAL_OPTIONS_RAW = [
+    {
+      id: 'manual_24_25_dic',
+      label: '24 y 25 de diciembre',
+      shortLabel: '24 y 25 Dic',
+      days: 'Jue 24 – Vie 25 Dic 2026',
+      seasonTag: 'Manual exclusivo',
+      colorIndex: 6,
+      exclusiveManual: true,
+      exclusiveEmpIds: [1, 5, 15]
+    },
     {
       id: 'manual_26_27_dic',
       label: '26 y 27 de diciembre',
@@ -98,35 +106,46 @@
       seasonTag: 'Manual exclusivo',
       colorIndex: 5,
       exclusiveManual: true,
-      exclusiveEmpId: 34
+      exclusiveEmpIds: [34]
+    },
+    {
+      id: 'manual_31_dic_01_ene',
+      label: '31 de diciembre y 01 de enero',
+      shortLabel: '31 Dic y 01 Ene',
+      days: 'Jue 31 Dic – Vie 01 Ene 2027',
+      seasonTag: 'Manual exclusivo',
+      colorIndex: 2,
+      wheelTop: '31 Dic y',
+      wheelBottom: '01 ENERO',
+      exclusiveManual: true,
+      exclusiveEmpIds: [2, 4, 12, 39, 41]
     }
   ];
 
   const PRE_REGISTERED_TIMESTAMP = '24/11/2026 14:35:00';
   const PRE_REGISTERED_MANUAL_RAW = [
-    { empId: 4,  area: 'Administrativa', name: 'FRANCO OSPINA DIEGO ALEJANDRO',      optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
-    { empId: 5,  area: 'Administrativa', name: 'DIAZ BOHORQUEZ NINI JOHANA',         optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
-    { empId: 2,  area: 'Administrativa', name: 'CASTRO VALENCIA ANDRES DAVID',       optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
-    { empId: 1,  area: 'Administrativa', name: 'SALAS HERNANDEZ JHONATAN JAVIER',    optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
-    { empId: 15, area: 'Bar',            name: 'RENDON MEJIA PABLO ANDRES',          optionId: '1',                label: '24 y 25 de diciembre',          reason: 'Pre-registrado' },
-    { empId: 41, area: 'Mantenimiento',  name: 'GOMEZ CALDERON ROBIRIO ANTONIO',     optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
-    { empId: 12, area: 'Ama de Llaves',  name: 'VILLA GONZALEZ BLANCA ALICIA',       optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
-    { empId: 39, area: 'Almacén',        name: 'ALVAREZ SEPULVEDA WILSON ALEXANDER', optionId: '4',                label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado' },
-    { empId: 38, area: 'Almacén',        name: 'MORALES HENAO RAUL SANTIAGO',        optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' },
-    { empId: 29, area: 'Producción',     name: 'RIOS GARCIA CAROLINA',               optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
-    { empId: 34, area: 'Producción',     name: 'GARCIA CARMONA SANTIAGO',            optionId: 'manual_26_27_dic', label: '26 y 27 de diciembre',          reason: 'Pre-registrado (fecha exclusiva)', exclusiveManual: true },
-    { empId: 26, area: 'Producción',     name: 'MARIN VELASQUEZ JUAN PABLO',         optionId: '5',                label: '01 y 02 de enero',              reason: 'Pre-registrado' },
-    { empId: 3,  area: 'Administrativa', name: 'LOPEZ BEDOYA ANA MARIA',             optionId: '2',                label: '25 y 26 de diciembre',          reason: 'Pre-registrado' }
+    { empId: 4,  area: 'Administrativa', name: 'FRANCO OSPINA DIEGO ALEJANDRO',      optionId: 'manual_31_dic_01_ene', label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado', exclusiveManual: true },
+    { empId: 5,  area: 'Administrativa', name: 'DIAZ BOHORQUEZ NINI JOHANA',         optionId: 'manual_24_25_dic',     label: '24 y 25 de diciembre',          reason: 'Pre-registrado', exclusiveManual: true },
+    { empId: 2,  area: 'Administrativa', name: 'CASTRO VALENCIA ANDRES DAVID',       optionId: 'manual_31_dic_01_ene', label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado', exclusiveManual: true },
+    { empId: 1,  area: 'Administrativa', name: 'SALAS HERNANDEZ JHONATAN JAVIER',    optionId: 'manual_24_25_dic',     label: '24 y 25 de diciembre',          reason: 'Pre-registrado', exclusiveManual: true },
+    { empId: 15, area: 'Bar',            name: 'RENDON MEJIA PABLO ANDRES',          optionId: 'manual_24_25_dic',     label: '24 y 25 de diciembre',          reason: 'Pre-registrado', exclusiveManual: true },
+    { empId: 41, area: 'Mantenimiento',  name: 'GOMEZ CALDERON ROBIRIO ANTONIO',     optionId: 'manual_31_dic_01_ene', label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado', exclusiveManual: true },
+    { empId: 12, area: 'Ama de Llaves',  name: 'VILLA GONZALEZ BLANCA ALICIA',       optionId: 'manual_31_dic_01_ene', label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado', exclusiveManual: true },
+    { empId: 39, area: 'Almacén',        name: 'ALVAREZ SEPULVEDA WILSON ALEXANDER', optionId: 'manual_31_dic_01_ene', label: '31 de diciembre y 01 de enero', reason: 'Pre-registrado', exclusiveManual: true },
+    { empId: 38, area: 'Almacén',        name: 'MORALES HENAO RAUL SANTIAGO',        optionId: '1',                    label: '25 y 26 de diciembre',          reason: 'Pre-registrado' },
+    { empId: 29, area: 'Producción',     name: 'RIOS GARCIA CAROLINA',               optionId: '3',                    label: '01 y 02 de enero',              reason: 'Pre-registrado' },
+    { empId: 34, area: 'Producción',     name: 'GARCIA CARMONA SANTIAGO',            optionId: 'manual_26_27_dic',     label: '26 y 27 de diciembre',          reason: 'Pre-registrado (fecha exclusiva)', exclusiveManual: true },
+    { empId: 26, area: 'Producción',     name: 'MARIN VELASQUEZ JUAN PABLO',         optionId: '3',                    label: '01 y 02 de enero',              reason: 'Pre-registrado' },
+    { empId: 3,  area: 'Administrativa', name: 'LOPEZ BEDOYA ANA MARIA',             optionId: '1',                    label: '25 y 26 de diciembre',          reason: 'Pre-registrado' }
   ];
 
   const PRE_REGISTERED_BY_ID = {};
   PRE_REGISTERED_MANUAL_RAW.forEach(item => { PRE_REGISTERED_BY_ID[item.empId] = item; });
 
   const MAX_SPINS_PER_PERSON = 2;
-  const AREA_HARD_CAPS = { 'Bar': 2, 'Producción': 2 };
 
-  const STORAGE_KEY = 'quirama_ruleta_descansos_2026_v5';
-  const EQUITY_SCHEMA_VERSION = 5;
+  const STORAGE_KEY = 'quirama_ruleta_descansos_2026_v6';
+  const EQUITY_SCHEMA_VERSION = 6;
   const SYNC_URL_KEY = 'quirama_sync_url_v1';
   const THEME_KEY = 'quirama_theme_v1';
   const LOGO_STORAGE_KEY = 'quirama_company_logo_v1';
@@ -185,6 +204,9 @@
     const pal = COLOR_PALETTE[colorIndex];
     const label = String(raw.label || `Opción ${idx + 1}`).trim();
     const parts = splitWheelText(label);
+    const exclusiveEmpIds = Array.isArray(raw.exclusiveEmpIds)
+      ? raw.exclusiveEmpIds.map(Number).filter(Number.isFinite)
+      : (raw.exclusiveEmpId ? [Number(raw.exclusiveEmpId)] : []);
     return {
       id: String(raw.id !== undefined && raw.id !== null ? raw.id : idx),
       label,
@@ -201,7 +223,7 @@
       pillText: pal.pillText,
       xlsxStyleIndex: pal.xlsxStyleIndex,
       exclusiveManual: Boolean(raw.exclusiveManual),
-      exclusiveEmpId: raw.exclusiveEmpId ? Number(raw.exclusiveEmpId) : null
+      exclusiveEmpIds
     };
   }
 
@@ -250,18 +272,39 @@
 
   function getExclusiveAssignedOptions() {
     const activeIds = new Set(state.options.map(o => o.id));
-    const found = [];
-    const seenIds = new Set();
+    const activeLabels = new Set(state.options.map(o => o.label.toLowerCase()));
+    const byId = new Map();
     for (const rec of Object.values(state.assignments || {})) {
       if (!rec) continue;
       if (activeIds.has(String(rec.optionId))) continue;
+      if (rec.optionLabel && activeLabels.has(String(rec.optionLabel).trim().toLowerCase())) continue;
       const opt = resolveAssignedOption(rec);
-      if (opt && !seenIds.has(opt.id)) {
-        seenIds.add(opt.id);
-        found.push(opt);
+      if (opt && !byId.has(opt.id)) {
+        byId.set(opt.id, opt);
       }
     }
-    return found;
+    const ordered = [];
+    for (const known of EXCLUSIVE_MANUAL_OPTIONS) {
+      if (byId.has(known.id)) {
+        ordered.push(byId.get(known.id));
+        byId.delete(known.id);
+      }
+    }
+    for (const extra of byId.values()) ordered.push(extra);
+    return ordered;
+  }
+
+  function getExclusiveAssignedCount(assignments = state.assignments, options = state.options) {
+    const activeIds = new Set((options || []).map(o => String(o.id)));
+    const activeLabels = new Set((options || []).map(o => String(o.label || '').trim().toLowerCase()));
+    let count = 0;
+    for (const rec of Object.values(assignments || {})) {
+      if (!rec) continue;
+      if (activeIds.has(String(rec.optionId))) continue;
+      if (rec.optionLabel && activeLabels.has(String(rec.optionLabel).trim().toLowerCase())) continue;
+      count++;
+    }
+    return count;
   }
 
   function isPreRegisteredLocked(empId) {
@@ -296,12 +339,15 @@
   function buildPreRegisteredAssignments(options) {
     const map = {};
     const optById = {};
+    const activeLabels = new Set(options.map(o => o.label.toLowerCase()));
     options.forEach(o => { optById[o.id] = o; });
     EXCLUSIVE_MANUAL_OPTIONS.forEach(o => { optById[o.id] = o; });
 
     PRE_REGISTERED_MANUAL_RAW.forEach(item => {
-      const opt = optById[item.optionId] || options.find(o => o.label.toLowerCase() === item.label.toLowerCase()) || getExclusiveOptionByLabel(item.label);
+      const activeByLabel = options.find(o => o.label.toLowerCase() === item.label.toLowerCase());
+      const opt = activeByLabel || optById[item.optionId] || getExclusiveOptionByLabel(item.label);
       if (!opt) return;
+      const isExcl = !activeLabels.has(opt.label.toLowerCase());
       map[item.empId] = {
         optionId: opt.id,
         optionLabel: opt.label,
@@ -311,7 +357,7 @@
         isManual: true,
         manualReason: item.reason,
         isPreRegistered: true,
-        exclusiveManual: Boolean(item.exclusiveManual || opt.exclusiveManual),
+        exclusiveManual: isExcl,
         spinCount: 0,
         finalized: true
       };
@@ -325,7 +371,8 @@
     EXCLUSIVE_MANUAL_OPTIONS.forEach(o => { optById[o.id] = o; });
 
     return PRE_REGISTERED_MANUAL_RAW.map((item, idx) => {
-      const opt = optById[item.optionId] || getExclusiveOptionByLabel(item.label);
+      const activeByLabel = options.find(o => o.label.toLowerCase() === item.label.toLowerCase());
+      const opt = activeByLabel || optById[item.optionId] || getExclusiveOptionByLabel(item.label);
       return {
         order: idx + 1,
         empId: item.empId,
@@ -375,15 +422,17 @@
 
   function defaultState() {
     const options = DEFAULT_OPTIONS_RAW.map((o, i) => normalizeOption(o, i));
+    const assignments = buildPreRegisteredAssignments(options);
+    const exclCount = getExclusiveAssignedCount(assignments, options);
     return {
       employees: INITIAL_EMPLOYEES.map(e => ({ ...e })),
       options,
-      assignments: buildPreRegisteredAssignments(options),
+      assignments,
       pendingSpins: {},
       history: buildPreRegisteredHistory(options),
       mode: 'area_balanced',
       equityVersion: EQUITY_SCHEMA_VERSION,
-      quotas: normalizeQuotas(null, options, INITIAL_EMPLOYEES.length - EXCLUSIVE_MANUAL_OPTIONS.length),
+      quotas: normalizeQuotas(null, options, Math.max(1, INITIAL_EMPLOYEES.length - exclCount)),
       soundOn: true,
       autoDownload: false,
       nextEmpId: 45
@@ -399,23 +448,25 @@
       const opts = Array.isArray(parsed.options) && parsed.options.length >= 2
         ? parsed.options.map((o, i) => normalizeOption(o, i))
         : DEFAULT_OPTIONS_RAW.map((o, i) => normalizeOption(o, i));
+      const activeIds = new Set(opts.map(o => o.id));
       const normalizedAssignments = {};
       for (const [k, v] of Object.entries(parsed.assignments || {})) {
         if (v && v.optionId !== undefined && v.optionId !== null) {
           const isPre = Boolean(v.isPreRegistered || PRE_REGISTERED_BY_ID[Number(k)]);
+          const isExcl = Boolean(v.exclusiveManual || (!activeIds.has(String(v.optionId)) && Boolean(getExclusiveOptionById(v.optionId))));
           normalizedAssignments[k] = {
             ...v,
             optionId: String(v.optionId),
             isManual: Boolean(v.isManual || v.mode === 'manual' || isPre),
             isPreRegistered: isPre,
-            exclusiveManual: Boolean(v.exclusiveManual || String(v.optionId) === 'manual_26_27_dic'),
+            exclusiveManual: isExcl,
             manualReason: String(v.manualReason || ''),
             spinCount: Number(v.spinCount || (v.isManual || v.mode === 'manual' ? 0 : 1)),
             finalized: v.finalized !== false
           };
         }
       }
-      // Ensure pre-registered exclusive assignment is always intact if missing
+      // Ensure pre-registered manual assignments are always intact if missing
       const preDefaults = buildPreRegisteredAssignments(opts);
       for (const [empId, preRec] of Object.entries(preDefaults)) {
         if (!normalizedAssignments[empId]) {
@@ -439,6 +490,7 @@
       if (prevVer < EQUITY_SCHEMA_VERSION && resolvedMode === 'equal') {
         resolvedMode = 'area_balanced';
       }
+      const exclCount = getExclusiveAssignedCount(normalizedAssignments, opts);
       return {
         ...defaultState(),
         ...parsed,
@@ -447,7 +499,7 @@
         options: opts,
         assignments: normalizedAssignments,
         pendingSpins: normalizedPendingSpins,
-        quotas: normalizeQuotas(parsed.quotas, opts, Math.max(1, parsed.employees.length - EXCLUSIVE_MANUAL_OPTIONS.length))
+        quotas: normalizeQuotas(parsed.quotas, opts, Math.max(1, parsed.employees.length - exclCount))
       };
     } catch (_) {
       return defaultState();
@@ -656,10 +708,18 @@
     if (remote.employees.length > 0) state.employees = remote.employees;
 
     if (Array.isArray(remote.options) && remote.options.length >= 2) {
-      // Preserve our 6-date structure if a stale v2/v3 script only has old 4 options while local has 6
-      const remoteLooksStale4 = remoteVer < 4 && remote.options.length === 4 &&
-        remote.options.every((o, idx) => o && String(o.label || '').toLowerCase() === ['23 y 24 de diciembre', '25 y 26 de diciembre', '30 y 31 de diciembre', '01 y 02 de enero'][idx]);
-      if (!remoteLooksStale4) {
+      // Preserve the official 4-date structure if an older v4/v5 script still holds the legacy 6 options
+      const legacy6 = [
+        '23 y 24 de diciembre',
+        '24 y 25 de diciembre',
+        '25 y 26 de diciembre',
+        '30 y 31 de diciembre',
+        '31 de diciembre y 01 de enero',
+        '01 y 02 de enero'
+      ];
+      const remoteLooksStale6 = remoteVer < 6 && remote.options.length === 6 &&
+        remote.options.every((o, idx) => o && String(o.label || '').trim().toLowerCase() === legacy6[idx]);
+      if (!remoteLooksStale6) {
         state.options = remote.options.map((o, i) => normalizeOption(o, i));
       }
     }
@@ -667,9 +727,12 @@
     const prevAssignments = state.assignments || {};
     const prevPendingSpins = state.pendingSpins || {};
     const nextAssignments = {};
+    const activeIds = new Set(state.options.map(o => o.id));
     const optByLabel = {};
     state.options.forEach(o => { optByLabel[o.label.toLowerCase()] = o; });
-    EXCLUSIVE_MANUAL_OPTIONS.forEach(o => { optByLabel[o.label.toLowerCase()] = o; });
+    EXCLUSIVE_MANUAL_OPTIONS.forEach(o => {
+      if (!optByLabel[o.label.toLowerCase()]) optByLabel[o.label.toLowerCase()] = o;
+    });
 
     for (const [empId, rec] of Object.entries(remote.assignments || {})) {
       if (!rec || (rec.optionId === undefined && !rec.optionLabel)) continue;
@@ -678,16 +741,24 @@
       const keepLocalManual = remoteVer < 2 && prev && prev.isManual && String(prev.optionId) === String(rec.optionId);
       const isPre = Boolean(rec.isPreRegistered || PRE_REGISTERED_BY_ID[numId]);
       const isManual = Boolean(rec.isManual || rec.mode === 'manual' || keepLocalManual || isPre);
-      let resolvedOptId = rec.optionId !== undefined && rec.optionId !== null ? String(rec.optionId) : '';
-      if (!getOptionById(resolvedOptId) && !getExclusiveOptionById(resolvedOptId) && rec.optionLabel) {
-        const matched = optByLabel[String(rec.optionLabel).trim().toLowerCase()];
-        if (matched) resolvedOptId = matched.id;
+
+      let matchedOpt = null;
+      if (rec.optionLabel) {
+        matchedOpt = optByLabel[String(rec.optionLabel).trim().toLowerCase()] || null;
       }
+      if (!matchedOpt && rec.optionId !== undefined && rec.optionId !== null) {
+        matchedOpt = getOptionById(String(rec.optionId)) || getExclusiveOptionById(String(rec.optionId));
+      }
+      const resolvedOptId = matchedOpt
+        ? matchedOpt.id
+        : (rec.optionId !== undefined && rec.optionId !== null ? String(rec.optionId) : '');
+
       const sameAsPrev = prev && String(prev.optionId) === resolvedOptId;
       const inferredSpinCount = rec.spinCount !== undefined
         ? Number(rec.spinCount)
         : (isManual ? 0 : (sameAsPrev && prev.spinCount ? Number(prev.spinCount) : 1));
-      const matchedOpt = getOptionById(resolvedOptId) || getExclusiveOptionById(resolvedOptId);
+      const isExcl = Boolean(!activeIds.has(resolvedOptId) && (rec.exclusiveManual || (matchedOpt && matchedOpt.exclusiveManual)));
+
       nextAssignments[empId] = {
         optionId: resolvedOptId,
         optionLabel: rec.optionLabel || (matchedOpt ? matchedOpt.label : (sameAsPrev ? prev.optionLabel : '')),
@@ -696,7 +767,7 @@
         mode: isManual ? 'manual' : (rec.mode || state.mode || 'area_balanced'),
         isManual,
         isPreRegistered: isPre,
-        exclusiveManual: Boolean(rec.exclusiveManual || (matchedOpt && matchedOpt.exclusiveManual)),
+        exclusiveManual: isExcl,
         manualReason: String(rec.manualReason || (keepLocalManual ? prev.manualReason : '') || (isPre && PRE_REGISTERED_BY_ID[numId] ? PRE_REGISTERED_BY_ID[numId].reason : '')),
         spinCount: inferredSpinCount,
         firstSpinLabel: String(rec.firstSpinLabel || (sameAsPrev && prev.firstSpinLabel ? prev.firstSpinLabel : '')),
@@ -704,9 +775,9 @@
       };
     }
 
-    // For Apps Script < v4, preserve off-roulette exclusive manual assignments (e.g. Santiago 26-27 Dic)
-    // and any pre-registered dates that an older script could not match against its options list
-    if (remoteVer < 4) {
+    // Preserve all 13 pre-registered manual dates and any off-roulette exclusive manual assignments
+    // when syncing against an older Apps Script version (< v6)
+    if (remoteVer < 6) {
       const preDefaults = buildPreRegisteredAssignments(state.options);
       for (const [empId, preRec] of Object.entries(preDefaults)) {
         if (!nextAssignments[empId]) {
@@ -755,7 +826,7 @@
     state.history = Array.isArray(remote.history)
       ? remote.history.map(h => {
           let optIdStr = h.optionId !== undefined && h.optionId !== null ? String(h.optionId) : null;
-          if (!optIdStr && h.optionLabel) {
+          if (h.optionLabel) {
             const matched = optByLabel[String(h.optionLabel).trim().toLowerCase()];
             if (matched) optIdStr = matched.id;
           }
@@ -785,7 +856,7 @@
         })
       : [];
 
-    if (remoteVer >= 3) {
+    if (remoteVer >= 6) {
       if (['area_balanced', 'balanced', 'equal'].includes(remote.mode)) {
         state.mode = remote.mode;
       }
@@ -793,7 +864,7 @@
       state.mode = 'balanced';
     }
     if (remote.quotas) {
-      const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedOptions().length);
+      const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedCount(state.assignments, state.options));
       state.quotas = normalizeQuotas(remote.quotas, state.options, rouletteCount);
     }
     if (remote.nextEmpId) state.nextEmpId = Number(remote.nextEmpId);
@@ -1010,8 +1081,9 @@
     return state.history.some(h => {
       if (!h || h.isManual || h.mode === 'manual') return false;
       const modeTxtLower = String(h.modeText || '').toLowerCase();
-      if (h.spinOutcome === 'provisional' || h.spinOutcome === 'discarded' ||
-          modeTxtLower.includes('por confirmar') || modeTxtLower.includes('descartado')) {
+      if (h.spinOutcome === 'provisional' || h.spinOutcome === 'discarded' || h.spinOutcome === 'deleted_admin' ||
+          modeTxtLower.includes('por confirmar') || modeTxtLower.includes('descartado') ||
+          modeTxtLower.includes('anulado') || modeTxtLower.includes('eliminado')) {
         return false;
       }
       const matchesEmp = (h.empId !== undefined && h.empId !== null && Number(h.empId) === numId) ||
@@ -1035,7 +1107,7 @@
   let equityCacheModel = null;
 
   function buildEquityCacheKey(excludeEmpId = null) {
-    const optPart = state.options.map(o => o.id).join(',');
+    const optPart = state.options.map(o => `${o.id}:${o.label}`).join(',');
     const empPart = state.employees.map(e => `${e.id}:${e.area}`).join('|');
     const asgPart = Object.keys(state.assignments)
       .sort()
@@ -1048,144 +1120,257 @@
     return `${optPart}#${empPart}#${asgPart}#${pendPart}#${excludeEmpId === null ? '' : excludeEmpId}`;
   }
 
-  function waterFill(counts, pending, hardCap = null) {
+  function getRuleGroupKey(area) {
+    const clean = String(area || 'General').trim();
+    const norm = stripAccents(clean);
+    if (norm === 'mantenimiento' || norm === 'mantenimiento zonas humedas') {
+      return 'Mantenimiento';
+    }
+    return clean;
+  }
+
+  function isDate23_24(opt) {
+    const s = stripAccents((opt && opt.label) || '');
+    return /\b23\b/.test(s) && /\b24\b/.test(s) && s.includes('dic');
+  }
+
+  function isDate01_02(opt) {
+    const s = stripAccents((opt && opt.label) || '');
+    return /\b0?1\b/.test(s) && /\b0?2\b/.test(s) && s.includes('ene');
+  }
+
+  function cappedWaterFill(counts, pending, maxCaps) {
     const k = counts.length;
     if (k === 0) {
-      return { level: 0, baseNeed: [], extrasLeft: 0, eligibleForExtra: [], minAfterBase: [] };
+      return { baseNeed: [], extrasLeft: 0, eligibleForExtra: [], minAfterBase: [] };
     }
     if (pending <= 0) {
       return {
-        level: Math.min(...counts),
         baseNeed: Array(k).fill(0),
         extrasLeft: 0,
         eligibleForExtra: Array(k).fill(false),
         minAfterBase: counts.slice()
       };
     }
-    let capCapacity = 0;
-    if (hardCap !== null && Number.isFinite(hardCap)) {
-      for (let j = 0; j < k; j++) {
-        if (counts[j] < hardCap) capCapacity += (hardCap - counts[j]);
-      }
-    }
-    const useCap = hardCap !== null && Number.isFinite(hardCap) && capCapacity >= pending;
 
-    let L = Math.min(...counts);
-    while (true) {
-      const nextL = L + 1;
-      if (useCap && nextL > hardCap) break;
-      let needed = 0;
-      for (let j = 0; j < k; j++) {
-        if (counts[j] < nextL) needed += (nextL - counts[j]);
-      }
-      if (needed <= pending) {
-        L = nextL;
-      } else {
-        break;
-      }
-    }
-    const baseNeed = Array(k).fill(0);
-    let baseSum = 0;
-    const minAfterBase = Array(k).fill(0);
-    const eligibleForExtra = Array(k).fill(false);
+    let capCapacity = 0;
+    let allFinite = true;
     for (let j = 0; j < k; j++) {
-      baseNeed[j] = counts[j] < L ? (L - counts[j]) : 0;
-      baseSum += baseNeed[j];
-      minAfterBase[j] = counts[j] + baseNeed[j];
-      eligibleForExtra[j] = counts[j] <= L && (!useCap || (L + 1) <= hardCap);
+      const cap = maxCaps && maxCaps[j] !== undefined && maxCaps[j] !== null ? maxCaps[j] : Infinity;
+      if (!Number.isFinite(cap)) {
+        allFinite = false;
+      } else if (counts[j] < cap) {
+        capCapacity += (cap - counts[j]);
+      }
     }
-    const extrasLeft = pending - baseSum;
-    return { level: L, baseNeed, extrasLeft, eligibleForExtra, minAfterBase };
+    const effectiveCaps = (!allFinite || capCapacity >= pending)
+      ? Array.from({ length: k }, (_, j) => (maxCaps && maxCaps[j] !== undefined && maxCaps[j] !== null ? maxCaps[j] : Infinity))
+      : Array(k).fill(Infinity);
+
+    const baseNeed = Array(k).fill(0);
+    const cur = counts.slice();
+    let rem = pending;
+
+    while (rem > 0) {
+      let minOpen = Infinity;
+      for (let j = 0; j < k; j++) {
+        if (cur[j] < effectiveCaps[j] && cur[j] < minOpen) {
+          minOpen = cur[j];
+        }
+      }
+      if (!Number.isFinite(minOpen)) break;
+
+      const openAtMin = [];
+      for (let j = 0; j < k; j++) {
+        if (cur[j] === minOpen && cur[j] < effectiveCaps[j]) {
+          openAtMin.push(j);
+        }
+      }
+      if (openAtMin.length === 0) break;
+
+      if (openAtMin.length <= rem) {
+        for (const j of openAtMin) {
+          cur[j] += 1;
+          baseNeed[j] += 1;
+        }
+        rem -= openAtMin.length;
+      } else {
+        const eligibleForExtra = Array(k).fill(false);
+        for (const j of openAtMin) eligibleForExtra[j] = true;
+        return {
+          baseNeed,
+          extrasLeft: rem,
+          eligibleForExtra,
+          minAfterBase: cur
+        };
+      }
+    }
+
+    return {
+      baseNeed,
+      extrasLeft: 0,
+      eligibleForExtra: Array(k).fill(false),
+      minAfterBase: cur
+    };
   }
 
-  function minCostBalance(activeAreas, minFinal, numOptions) {
-    let baseSqSum = 0;
-    for (let j = 0; j < numOptions; j++) {
-      baseSqSum += minFinal[j] * minFinal[j];
-    }
-    let totalExtras = 0;
-    for (let i = 0; i < activeAreas.length; i++) {
-      totalExtras += activeAreas[i].extrasLeft;
-    }
-    if (totalExtras <= 0) return baseSqSum;
+  function buildAreaRuleSpec(groupKey, options, counts) {
+    const k = options.length;
+    const norm = stripAccents(groupKey);
 
-    const M = activeAreas.length;
-    const S = 0;
-    const dateOffset = 1 + M;
-    const T = dateOffset + numOptions;
-    const N = T + 1;
-    const adj = Array.from({ length: N }, () => []);
-
-    function addEdge(u, v, cap, cost) {
-      const fwd = { to: v, rev: adj[v].length, cap, cost };
-      const bwd = { to: u, rev: adj[u].length, cap: 0, cost: -cost };
-      adj[u].push(fwd);
-      adj[v].push(bwd);
+    // 1. Recepción: 1 persona por cada fecha de descanso
+    if (norm === 'recepcion') {
+      return {
+        fixedMin: Array(k).fill(0),
+        maxCap: Array(k).fill(1),
+        ruleLabel: '1 / fecha',
+        hasCustomRule: true
+      };
     }
 
-    const dateDeg = Array(numOptions).fill(0);
-    for (let i = 0; i < M; i++) {
-      const a = activeAreas[i];
-      if (a.extrasLeft <= 0) continue;
-      addEdge(S, 1 + i, a.extrasLeft, 0);
-      for (let j = 0; j < numOptions; j++) {
-        if (a.eligibleForExtra[j]) {
-          addEdge(1 + i, dateOffset + j, 1, 0);
-          dateDeg[j]++;
+    // 2. Ama de Llaves (Camareras): 2 personas el 23 y 24 dic, resto máx. 1 persona
+    if (norm === 'ama de llaves') {
+      const idx23 = options.findIndex(isDate23_24);
+      if (idx23 >= 0) {
+        return {
+          fixedMin: options.map((_, j) => (j === idx23 ? 2 : 0)),
+          maxCap: options.map((_, j) => (j === idx23 ? 2 : 1)),
+          ruleLabel: '2 en 23–24 Dic · máx. 1 resto',
+          hasCustomRule: true
+        };
+      }
+    }
+
+    // 3. Bar: 2 personas el 01 y 02 ene, otras fechas máx. 3 personas
+    if (norm === 'bar') {
+      const idx01 = options.findIndex(isDate01_02);
+      if (idx01 >= 0) {
+        return {
+          fixedMin: options.map((_, j) => (j === idx01 ? 2 : 0)),
+          maxCap: options.map((_, j) => (j === idx01 ? 2 : 3)),
+          ruleLabel: '2 en 01–02 Ene · máx. 3 resto',
+          hasCustomRule: true
+        };
+      }
+      return {
+        fixedMin: Array(k).fill(0),
+        maxCap: Array(k).fill(3),
+        ruleLabel: 'máx. 3 / fecha',
+        hasCustomRule: true
+      };
+    }
+
+    // 4. Producción: máx. 3 personas por fecha
+    if (norm === 'produccion') {
+      return {
+        fixedMin: Array(k).fill(0),
+        maxCap: Array(k).fill(3),
+        ruleLabel: 'máx. 3 / fecha',
+        hasCustomRule: true
+      };
+    }
+
+    // 5. Mantenimiento (+ Mantenimiento Zonas Húmedas): máx. 2 personas en 1 sola fecha y máx. 1 en el resto
+    if (norm === 'mantenimiento') {
+      const alreadyHasDouble = counts.some(c => c >= 2);
+      return {
+        fixedMin: Array(k).fill(0),
+        maxCap: counts.map(c => (alreadyHasDouble ? (c >= 2 ? c : 1) : 2)),
+        ruleLabel: 'máx. 2 en 1 fecha · 1 resto',
+        hasCustomRule: true
+      };
+    }
+
+    return {
+      fixedMin: Array(k).fill(0),
+      maxCap: Array(k).fill(Infinity),
+      ruleLabel: null,
+      hasCustomRule: false
+    };
+  }
+
+  function solveGroupRule(groupKey, options, counts, pending) {
+    const k = options.length;
+    const spec = buildAreaRuleSpec(groupKey, options, counts);
+    const fixedMin = spec.fixedMin;
+    const maxCap = spec.maxCap;
+
+    if (k === 0 || pending <= 0) {
+      return {
+        spec,
+        weights: Array(k).fill(0),
+        minAfterAll: counts.slice(),
+        maxAfterAll: counts.slice(),
+        ruleMaxCap: maxCap.slice(),
+        extrasLeft: 0
+      };
+    }
+
+    // Phase 1: Guarantee fixed minimums (e.g., Ama de Llaves = 2 on 23-24 Dic, Bar = 2 on 01-02 Ene)
+    const rawFixedNeed = Array(k).fill(0);
+    let totalFixedNeed = 0;
+    for (let j = 0; j < k; j++) {
+      const need = fixedMin[j] > counts[j] ? (fixedMin[j] - counts[j]) : 0;
+      rawFixedNeed[j] = need;
+      totalFixedNeed += need;
+    }
+
+    const fixedAlloc = Array(k).fill(0);
+    const curAfterFixed = counts.slice();
+    let remPending = pending;
+
+    if (totalFixedNeed > 0) {
+      if (totalFixedNeed <= remPending) {
+        for (let j = 0; j < k; j++) {
+          fixedAlloc[j] = rawFixedNeed[j];
+          curAfterFixed[j] += rawFixedNeed[j];
         }
-      }
-    }
-
-    for (let j = 0; j < numOptions; j++) {
-      for (let r = 1; r <= dateDeg[j]; r++) {
-        const nextVal = minFinal[j] + r;
-        addEdge(dateOffset + j, T, 1, 2 * nextVal - 1);
-      }
-    }
-
-    let addedCost = 0;
-    const INF = 1e12;
-    for (let step = 0; step < totalExtras; step++) {
-      const dist = Array(N).fill(INF);
-      const prevNode = Array(N).fill(-1);
-      const prevEdge = Array(N).fill(-1);
-      const inQueue = Array(N).fill(false);
-      const queue = [S];
-      dist[S] = 0;
-      inQueue[S] = true;
-
-      for (let qHead = 0; qHead < queue.length; qHead++) {
-        const u = queue[qHead];
-        inQueue[u] = false;
-        const edges = adj[u];
-        for (let ei = 0; ei < edges.length; ei++) {
-          const e = edges[ei];
-          if (e.cap > 0 && dist[u] + e.cost < dist[e.to]) {
-            dist[e.to] = dist[u] + e.cost;
-            prevNode[e.to] = u;
-            prevEdge[e.to] = ei;
-            if (!inQueue[e.to]) {
-              inQueue[e.to] = true;
-              queue.push(e.to);
-            }
-          }
+        remPending -= totalFixedNeed;
+      } else {
+        const wfFixed = cappedWaterFill(counts, remPending, fixedMin.map((m, j) => Math.max(counts[j], m)));
+        const eligCount = wfFixed.eligibleForExtra.filter(Boolean).length;
+        const weights = Array(k).fill(0);
+        const maxAfterAll = Array(k).fill(0);
+        for (let j = 0; j < k; j++) {
+          const extra = wfFixed.eligibleForExtra[j] && eligCount > 0 ? (wfFixed.extrasLeft / eligCount) : 0;
+          weights[j] = wfFixed.baseNeed[j] + extra;
+          maxAfterAll[j] = Math.max(counts[j], wfFixed.minAfterBase[j] + (wfFixed.eligibleForExtra[j] ? 1 : 0));
         }
-      }
-
-      if (dist[T] >= INF) break;
-      addedCost += dist[T];
-      let cur = T;
-      while (cur !== S) {
-        const p = prevNode[cur];
-        const ei = prevEdge[cur];
-        const e = adj[p][ei];
-        e.cap -= 1;
-        adj[cur][e.rev].cap += 1;
-        cur = p;
+        return {
+          spec,
+          weights,
+          minAfterAll: wfFixed.minAfterBase,
+          maxAfterAll,
+          ruleMaxCap: maxCap.slice(),
+          extrasLeft: wfFixed.extrasLeft
+        };
       }
     }
 
-    return baseSqSum + addedCost;
+    // Phase 2: Distribute remaining pending people respecting per-date maxCap
+    const wf = cappedWaterFill(curAfterFixed, remPending, maxCap);
+    const eligCount = wf.eligibleForExtra.filter(Boolean).length;
+    const weights = Array(k).fill(0);
+    const minAfterAll = Array(k).fill(0);
+    const maxAfterAll = Array(k).fill(0);
+
+    for (let j = 0; j < k; j++) {
+      const extraShare = wf.eligibleForExtra[j] && eligCount > 0
+        ? (wf.extrasLeft / eligCount)
+        : 0;
+      weights[j] = fixedAlloc[j] + wf.baseNeed[j] + extraShare;
+      minAfterAll[j] = wf.minAfterBase[j];
+      maxAfterAll[j] = Math.max(counts[j], wf.minAfterBase[j] + (wf.eligibleForExtra[j] ? 1 : 0));
+    }
+
+    return {
+      spec,
+      weights,
+      minAfterAll,
+      maxAfterAll,
+      ruleMaxCap: maxCap.slice(),
+      extrasLeft: wf.extrasLeft
+    };
   }
 
   function computeEquityModel(
@@ -1209,156 +1394,141 @@
     const optIndexById = {};
     options.forEach((o, idx) => { optIndexById[String(o.id)] = idx; });
 
-    const areaList = [];
-    const areaMap = {};
+    const groupList = [];
+    const groupMap = {};
+    const areaOwnStats = {};
     const globalCounts = Array(k).fill(0);
     let totalExclusiveAssigned = 0;
 
     for (const emp of employees) {
       const area = emp.area || 'General';
-      if (!areaMap[area]) {
-        areaMap[area] = { area, total: 0, exclusiveAssigned: 0, pending: 0, counts: Array(k).fill(0) };
-        areaList.push(areaMap[area]);
+      const groupKey = getRuleGroupKey(area);
+      if (!groupMap[groupKey]) {
+        groupMap[groupKey] = {
+          groupKey,
+          memberAreas: [],
+          total: 0,
+          exclusiveAssigned: 0,
+          pending: 0,
+          counts: Array(k).fill(0)
+        };
+        groupList.push(groupMap[groupKey]);
       }
-      const entry = areaMap[area];
-      entry.total++;
+      const gEntry = groupMap[groupKey];
+      if (!gEntry.memberAreas.includes(area)) gEntry.memberAreas.push(area);
+      gEntry.total++;
+
+      if (!areaOwnStats[area]) {
+        areaOwnStats[area] = { area, groupKey, total: 0, exclusiveAssigned: 0, pending: 0, counts: Array(k).fill(0) };
+      }
+      areaOwnStats[area].total++;
 
       const isExcluded = excludeEmpId !== null && Number(emp.id) === Number(excludeEmpId);
       const rec = isExcluded ? null : (assignments[emp.id] || (pendingSpins && pendingSpins[emp.id]) || null);
       if (rec) {
         const optIdx = optIndexById[String(rec.optionId)] !== undefined ? optIndexById[String(rec.optionId)] : -1;
         if (optIdx >= 0) {
-          entry.counts[optIdx]++;
+          gEntry.counts[optIdx]++;
+          areaOwnStats[area].counts[optIdx]++;
           globalCounts[optIdx]++;
         } else {
-          // Fecha manual exclusiva fuera de la ruleta (ej. 26 y 27 de diciembre)
-          entry.exclusiveAssigned++;
+          // Fecha manual exclusiva fuera de la ruleta (ej. 24-25 dic, 26-27 dic, 31 dic-01 ene)
+          gEntry.exclusiveAssigned++;
+          areaOwnStats[area].exclusiveAssigned++;
           totalExclusiveAssigned++;
         }
       } else {
-        entry.pending++;
+        gEntry.pending++;
+        areaOwnStats[area].pending++;
       }
     }
 
-    const minFinal = Array(k).fill(0);
-    const areaStates = areaList.map(entry => {
-      const hardCap = AREA_HARD_CAPS[entry.area] !== undefined ? AREA_HARD_CAPS[entry.area] : null;
-      const wf = waterFill(entry.counts, entry.pending, hardCap);
-      for (let j = 0; j < k; j++) minFinal[j] += wf.minAfterBase[j];
-      const rouletteTotal = Math.max(0, entry.total - entry.exclusiveAssigned);
-      const rawMaxTarget = Math.ceil(rouletteTotal / Math.max(1, k));
-      return {
-        ...entry,
-        rouletteTotal,
-        hardCap,
-        wf,
-        minTarget: Math.floor(rouletteTotal / Math.max(1, k)),
-        maxTarget: hardCap !== null ? Math.min(hardCap, Math.max(rawMaxTarget, ...entry.counts)) : rawMaxTarget
-      };
-    });
-
-    const activeExtraAreas = areaStates
-      .filter(a => a.wf.extrasLeft > 0)
-      .map(a => ({
-        area: a.area,
-        extrasLeft: a.wf.extrasLeft,
-        eligibleForExtra: a.wf.eligibleForExtra.slice()
-      }));
-
-    const totalExtras = activeExtraAreas.reduce((s, a) => s + a.extrasLeft, 0);
-    const optCost = minCostBalance(activeExtraAreas, minFinal, k);
-    const globalWF = waterFill(minFinal, totalExtras);
-    const globalMaxCapById = {};
     const globalCountsById = {};
+    const globalMaxCapById = {};
     const globalWeightsById = {};
-
     options.forEach((o, j) => {
       globalCountsById[o.id] = globalCounts[j];
-      globalMaxCapById[o.id] = Math.max(minFinal[j], globalWF.level + (globalWF.extrasLeft > 0 ? 1 : 0));
+      globalMaxCapById[o.id] = 0;
       globalWeightsById[o.id] = 0;
     });
 
+    const byGroup = {};
+    const byGroupList = [];
     const byArea = {};
-    for (const a of areaStates) {
-      const feasibleExtras = [];
-      const feasibleMap = Array(k).fill(false);
 
-      if (a.wf.extrasLeft > 0) {
-        const activeIdx = activeExtraAreas.findIndex(x => x.area === a.area);
-        for (let j = 0; j < k; j++) {
-          if (!a.wf.eligibleForExtra[j]) continue;
-          const nextMinFinal = minFinal.slice();
-          nextMinFinal[j] += 1;
-          const nextActive = activeExtraAreas.map((item, idx) => {
-            if (idx !== activeIdx) return item;
-            const nextElig = item.eligibleForExtra.slice();
-            nextElig[j] = false;
-            return {
-              area: item.area,
-              extrasLeft: item.extrasLeft - 1,
-              eligibleForExtra: nextElig
-            };
-          }).filter(item => item.extrasLeft > 0);
-
-          const candidateCost = minCostBalance(nextActive, nextMinFinal, k);
-          if (candidateCost === optCost) {
-            feasibleExtras.push(j);
-            feasibleMap[j] = true;
-          }
-        }
-        // Fallback safety (should never trigger): allow all eligible dates if exact match somehow empty
-        if (feasibleExtras.length === 0) {
-          for (let j = 0; j < k; j++) {
-            if (a.wf.eligibleForExtra[j]) {
-              feasibleExtras.push(j);
-              feasibleMap[j] = true;
-            }
-          }
-        }
-      }
+    for (const g of groupList) {
+      const solved = solveGroupRule(g.groupKey, options, g.counts, g.pending);
+      const rouletteTotal = Math.max(0, g.total - g.exclusiveAssigned);
+      const isMultiArea = g.memberAreas.length > 1;
+      const displayGroupLabel = isMultiArea && stripAccents(g.groupKey) === 'mantenimiento'
+        ? 'Mantenimiento (+ Z. Húmedas)'
+        : g.groupKey;
 
       const weightsById = {};
       const probsById = {};
       const countsById = {};
       const minCapById = {};
       const maxCapById = {};
+      const ruleMaxCapById = {};
       let weightSum = 0;
 
       for (let j = 0; j < k; j++) {
         const optId = options[j].id;
-        const extraShare = feasibleMap[j] && feasibleExtras.length > 0
-          ? (a.wf.extrasLeft / feasibleExtras.length)
-          : 0;
-        const w = a.wf.baseNeed[j] + extraShare;
+        const w = solved.weights[j] || 0;
         weightsById[optId] = w;
         weightSum += w;
-        countsById[optId] = a.counts[j];
-        minCapById[optId] = a.wf.minAfterBase[j];
-        maxCapById[optId] = Math.max(a.counts[j], a.wf.minAfterBase[j] + (feasibleMap[j] ? 1 : 0));
+        countsById[optId] = g.counts[j];
+        minCapById[optId] = solved.minAfterAll[j];
+        maxCapById[optId] = solved.maxAfterAll[j];
+        ruleMaxCapById[optId] = Number.isFinite(solved.ruleMaxCap[j])
+          ? solved.ruleMaxCap[j]
+          : solved.maxAfterAll[j];
         globalWeightsById[optId] += w;
+        globalMaxCapById[optId] += solved.maxAfterAll[j];
       }
 
       options.forEach(o => {
         probsById[o.id] = weightSum > 0 ? (weightsById[o.id] / weightSum) : 0;
       });
 
-      byArea[a.area] = {
-        area: a.area,
-        total: a.total,
-        rouletteTotal: a.rouletteTotal,
-        exclusiveAssigned: a.exclusiveAssigned,
-        hardCap: a.hardCap,
-        pending: a.pending,
-        minTarget: a.minTarget,
-        maxTarget: a.maxTarget,
+      const minTarget = k > 0 ? Math.min(...solved.minAfterAll) : 0;
+      const maxTarget = k > 0 ? Math.max(...solved.maxAfterAll) : 0;
+
+      const groupModel = {
+        groupKey: g.groupKey,
+        displayGroupLabel,
+        memberAreas: g.memberAreas.slice(),
+        isGrouped: isMultiArea,
+        total: g.total,
+        rouletteTotal,
+        exclusiveAssigned: g.exclusiveAssigned,
+        pending: g.pending,
+        hasCustomRule: solved.spec.hasCustomRule,
+        ruleLabel: solved.spec.ruleLabel,
+        minTarget,
+        maxTarget,
         countsById,
         minCapById,
         maxCapById,
+        ruleMaxCapById,
         weightsById,
         probsById,
-        extrasLeft: a.wf.extrasLeft,
-        feasibleExtrasCount: feasibleExtras.length
+        extrasLeft: solved.extrasLeft
       };
+
+      byGroup[g.groupKey] = groupModel;
+      byGroupList.push(groupModel);
+
+      for (const areaName of g.memberAreas) {
+        const own = areaOwnStats[areaName];
+        byArea[areaName] = {
+          ...groupModel,
+          area: areaName,
+          ownTotal: own ? own.total : g.total,
+          ownExclusiveAssigned: own ? own.exclusiveAssigned : g.exclusiveAssigned,
+          ownPending: own ? own.pending : g.pending
+        };
+      }
     }
 
     const totalEmps = employees.length;
@@ -1372,6 +1542,8 @@
       globalCountsById,
       globalMaxCapById,
       globalWeightsById,
+      byGroup,
+      byGroupList,
       byArea
     };
 
@@ -1384,7 +1556,7 @@
   }
 
   function getModeShortLabel(mode = state.mode) {
-    if (mode === 'area_balanced') return 'Equitativo por área y fecha';
+    if (mode === 'area_balanced') return 'Reglas estrictas por área';
     if (mode === 'balanced') return 'Cupos globales';
     return 'Azar libre';
   }
@@ -1773,7 +1945,7 @@
     const eqPct = formatPct(1 / Math.max(1, opts.length));
     const equityModel = computeEquityModel();
     const modeDesc = state.mode === 'area_balanced'
-      ? `Equitativo estricto por área (Bar y Producción máx. 2/fecha · General ${formatRangeTarget(equityModel.globalMinTarget, equityModel.globalMaxTarget)}/fecha · Hasta 2 tiros)`
+      ? `Reglas estrictas por área (${opts.length} fechas en ruleta · Recepción 1 · Camareras 2/1 · Bar 3/2 · Producción 3 · Mantenimiento 2/1 · Hasta 2 tiros)`
       : (state.mode === 'balanced'
           ? `Cupos globales (${opts.map(o => state.quotas[o.id] || 0).join(' / ')})`
           : `Azar libre (${eqPct} cada fecha)`);
@@ -1896,7 +2068,7 @@
   <mergeCells count="2"><mergeCell ref="A1:G1"/><mergeCell ref="A2:G2"/></mergeCells>
 </worksheet>`;
 
-    // ---- SHEET 2: Dynamic Summary by Area (6 roulette dates + exclusive manual dates if any) ----
+    // ---- SHEET 2: Dynamic Summary by Area (4 roulette dates + exclusive manual dates if any) ----
     const areas = getUniqueAreas();
     const exclusiveHeaderSet = new Set(exclusiveOpts.map(o => o.label));
     const s2Headers = ['Área', ...summaryOpts.map(o => o.label), 'Pendiente', 'Total'];
@@ -1904,7 +2076,7 @@
     const lastColL = colLetter(totalCols - 1);
     const lastSumColL = colLetter(totalCols - 2);
     const s2Subtitle = exclusiveOpts.length > 0
-      ? 'Fórmulas vinculadas a "Descansos Quirama" · Bar y Producción máx. 2/fecha en ruleta (columna naranja = fecha manual exclusiva fuera de ruleta)'
+      ? 'Fórmulas vinculadas a "Descansos Quirama" · Reglas por área en 4 fechas de ruleta (columnas naranjas = fechas manuales exclusivas fuera de ruleta)'
       : 'Fórmulas vinculadas automáticamente a la hoja "Descansos Quirama"';
 
     const s2Rows = [
@@ -2934,10 +3106,10 @@
     const eqModel = computeEquityModel();
     const areaInfo = eqModel.byArea[emp.area];
 
-    // Exclusive manual option is ONLY shown for its designated person (Santiago García Carmona)
+    // Exclusive manual options shown for their designated employees (or if already assigned)
     const modalOptions = [];
     EXCLUSIVE_MANUAL_OPTIONS.forEach(exOpt => {
-      if (exOpt.exclusiveEmpId === emp.id || (currentOpt && currentOpt.id === exOpt.id)) {
+      if ((Array.isArray(exOpt.exclusiveEmpIds) && exOpt.exclusiveEmpIds.includes(emp.id)) || (currentOpt && currentOpt.id === exOpt.id)) {
         modalOptions.push(exOpt);
       }
     });
@@ -2964,16 +3136,17 @@
       const gCount = eqModel.globalCountsById[opt.id] || 0;
       const gCap = eqModel.globalMaxCapById[opt.id] || eqModel.globalMaxTarget;
       const aCount = areaInfo ? (areaInfo.countsById[opt.id] || 0) : 0;
-      const aMaxTarget = areaInfo ? areaInfo.maxTarget : 0;
+      const aDateCap = areaInfo && areaInfo.ruleMaxCapById && areaInfo.ruleMaxCapById[opt.id] !== undefined
+        ? areaInfo.ruleMaxCapById[opt.id]
+        : (areaInfo ? areaInfo.maxTarget : 0);
       const isAlreadyThisOpt = currentRec && String(currentRec.optionId) === String(opt.id);
-      const wouldExceedArea = areaInfo && !isAlreadyThisOpt && (aCount + 1 > aMaxTarget);
-      const wouldExceedGlobal = !isAlreadyThisOpt && (gCount + 1 > gCap);
-      const quotaHint = `${emp.area}: ${aCount}/${aMaxTarget} · General: ${gCount}/${gCap}`;
-      const areaHardCap = AREA_HARD_CAPS[emp.area];
-      const warnLabel = areaHardCap !== undefined && wouldExceedArea
-        ? `⚠️ Supera máximo estricto de ${areaHardCap} en ${emp.area}`
+      const wouldExceedArea = areaInfo && !isAlreadyThisOpt && (aCount + 1 > aDateCap);
+      const groupName = areaInfo ? areaInfo.displayGroupLabel : emp.area;
+      const quotaHint = `${groupName}: ${aCount}/${aDateCap} · General: ${gCount}/${gCap}`;
+      const warnLabel = areaInfo && areaInfo.hasCustomRule && wouldExceedArea
+        ? `⚠️ Supera regla de máx. ${aDateCap} en ${groupName}`
         : '⚠️ Supera cupo equitativo';
-      const warnTag = (wouldExceedArea || wouldExceedGlobal)
+      const warnTag = wouldExceedArea
         ? `<span class="manual-quota-warn">${warnLabel}</span>`
         : '';
 
@@ -3021,22 +3194,24 @@
     const warnEl = document.getElementById('manageDatesWarning');
 
     const k = Math.max(1, draftDates.length);
-    const eqModel = computeEquityModel();
-    const rouletteEmps = eqModel.rouletteTotalEmps;
     const eqPct = formatPct(1 / k);
-    const globalRange = formatRangeTarget(Math.floor(rouletteEmps / k), Math.ceil(rouletteEmps / k));
     previewEl.textContent = state.mode === 'area_balanced'
-      ? `${draftDates.length} fechas activas · Reparto equitativo: ${globalRange} personas/fecha (Bar y Producción: máx. 2/fecha)`
+      ? `${draftDates.length} fechas activas · Reglas por área (Recepción 1 · Camareras 2/1 · Bar 3/2 · Producción 3 · Mantenimiento 2/1)`
       : `${draftDates.length} fechas activas · Probabilidad base: ${eqPct} cada una`;
 
-    // Check if any originally assigned option was deleted in draft
+    // Check if any originally assigned non-pre-registered option was deleted in draft
     const draftIds = new Set(draftDates.map(d => d.id));
     const affectedCount = state.options
       .filter(o => !draftIds.has(o.id))
-      .reduce((sum, o) => sum + (counts[o.id] || 0), 0);
+      .reduce((sum, o) => {
+        const nonPre = Object.entries(state.assignments || {}).filter(([empId, rec]) =>
+          rec && String(rec.optionId) === String(o.id) && !rec.isPreRegistered && !PRE_REGISTERED_BY_ID[Number(empId)]
+        ).length;
+        return sum + nonPre;
+      }, 0);
 
     if (affectedCount > 0) {
-      warnEl.textContent = `⚠️ Eliminaste una fecha que ya tenía ${affectedCount} colaborador(es) asignado(s). Al guardar, esas personas volverán a estado Pendiente.`;
+      warnEl.textContent = `⚠️ Eliminaste una fecha que ya tenía ${affectedCount} colaborador(es) sorteado(s). Al guardar, esas personas volverán a estado Pendiente (los pre-registrados manuales se conservan intactos).`;
       warnEl.classList.remove('hidden');
     } else {
       warnEl.classList.add('hidden');
@@ -3124,11 +3299,15 @@
       }
     });
 
-    // Apply locally (preserve exclusive manual assignments like 26 y 27 de diciembre)
+    // Apply locally (always preserve exclusive and pre-registered manual assignments)
     state.options = cleaned;
     for (const [empId, rec] of Object.entries(state.assignments)) {
       if (!nextIds.has(String(rec.optionId)) && !rec.exclusiveManual) {
-        delete state.assignments[empId];
+        if (rec.isPreRegistered || PRE_REGISTERED_BY_ID[Number(empId)]) {
+          rec.exclusiveManual = true;
+        } else {
+          delete state.assignments[empId];
+        }
       }
     }
     for (const [empId, pRec] of Object.entries(state.pendingSpins || {})) {
@@ -3136,7 +3315,7 @@
         delete state.pendingSpins[empId];
       }
     }
-    const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedOptions().length);
+    const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedCount(state.assignments, state.options));
     state.quotas = normalizeQuotas(state.quotas, state.options, rouletteCount);
     saveState();
     closeModal('modalManageDates');
@@ -3222,15 +3401,10 @@
     const pending = total - assigned;
     const pct = total > 0 ? Math.round((assigned / total) * 100) : 0;
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
-    const model = computeEquityModel();
-    const cappedAreas = Object.keys(AREA_HARD_CAPS).filter(a => Boolean(model.byArea[a]));
-    const capTxt = cappedAreas.length > 0
-      ? `${cappedAreas.join(' y ')} máx. 2/fecha`
-      : `${formatRangeTarget(model.globalMinTarget, model.globalMaxTarget)}/fecha`;
 
     document.getElementById('headerTotalPeople').textContent = total;
     document.getElementById('headerModeLabel').textContent = state.mode === 'area_balanced'
-      ? `Equitativo por área (${capTxt} · General ${formatRangeTarget(model.globalMinTarget, model.globalMaxTarget)}/fecha)`
+      ? `Reglas estrictas por área (${state.options.length} fechas en ruleta)`
       : (state.mode === 'balanced'
           ? `Cupos globales (${state.options.length} fechas)`
           : `Azar libre (${eqPct} por fecha)`);
@@ -3363,12 +3537,12 @@
         if (state.mode === 'area_balanced') {
           const model = computeEquityModel();
           const areaInfo = model.byArea[emp.area];
-          const areaLabel = areaInfo && areaInfo.hardCap !== null
-            ? `máx. ${areaInfo.maxTarget}/fecha`
+          const groupLabel = areaInfo ? areaInfo.displayGroupLabel : emp.area;
+          const ruleTxt = areaInfo && areaInfo.ruleLabel
+            ? areaInfo.ruleLabel
             : `${areaInfo ? formatRangeTarget(areaInfo.minTarget, areaInfo.maxTarget) : '—'}/fecha`;
-          const globalRange = formatRangeTarget(model.globalMinTarget, model.globalMaxTarget);
           const openCount = state.options.filter(o => (probs[o.id] || 0) > 1e-6).length;
-          metaEl.textContent = `Hasta ${MAX_SPINS_PER_PERSON} tiros con confirmación · ${emp.area}: ${areaLabel} · General: ${globalRange}/fecha · ${openCount} ${openCount === 1 ? 'fecha disponible' : 'fechas disponibles'}.`;
+          metaEl.textContent = `Hasta ${MAX_SPINS_PER_PERSON} tiros con confirmación · ${groupLabel}: ${ruleTxt} · ${openCount} ${openCount === 1 ? 'fecha disponible' : 'fechas disponibles'}.`;
         } else if (state.mode === 'balanced') {
           metaEl.textContent = `Hasta ${MAX_SPINS_PER_PERSON} tiros con confirmación · Cupos globales · Probabilidades: ${state.options.map(o => formatPct(probs[o.id] || 0)).join(' · ')}.`;
         } else {
@@ -3437,16 +3611,16 @@
     const selectedAreaInfo = selectedEmp ? model.byArea[selectedEmp.area] : null;
 
     if (state.mode === 'area_balanced') {
-      const gRange = formatRangeTarget(model.globalMinTarget, model.globalMaxTarget);
       if (selectedAreaInfo) {
-        const aRange = selectedAreaInfo.hardCap !== null
-          ? `máx. ${selectedAreaInfo.maxTarget}`
-          : formatRangeTarget(selectedAreaInfo.minTarget, selectedAreaInfo.maxTarget);
+        const groupLabel = selectedAreaInfo.displayGroupLabel;
+        const ruleTxt = selectedAreaInfo.ruleLabel
+          ? selectedAreaInfo.ruleLabel
+          : `${formatRangeTarget(selectedAreaInfo.minTarget, selectedAreaInfo.maxTarget)}/fecha`;
         document.getElementById('dateGridSummaryLabel').textContent =
-          `${state.options.length} fechas en ruleta · ${selectedEmp.area}: ${aRange}/fecha · General: ${gRange}/fecha`;
+          `${state.options.length} fechas en ruleta · ${groupLabel}: ${ruleTxt}`;
       } else {
         document.getElementById('dateGridSummaryLabel').textContent =
-          `${state.options.length} fechas en ruleta · Bar y Producción máx. 2/fecha · General: ${gRange}/fecha`;
+          `${state.options.length} fechas en ruleta · Reglas estrictas por área`;
       }
     } else if (state.mode === 'balanced') {
       document.getElementById('dateGridSummaryLabel').textContent = `${state.options.length} fechas en la ruleta · Cupos globales`;
@@ -3460,8 +3634,9 @@
       const count = counts[opt.id] || 0;
       const isAreaMode = state.mode === 'area_balanced';
       const isFullForArea = isAreaMode && selectedAreaInfo && selectedAreaInfo.pending > 0 && (selectedAreaInfo.weightsById[opt.id] || 0) <= 1e-9;
-      const isFullGlobal = (state.mode === 'balanced' && count >= (state.quotas[opt.id] || 1)) ||
-        (isAreaMode && count >= (model.globalMaxCapById[opt.id] || model.globalMaxTarget));
+      const isFullGlobal = state.mode === 'balanced'
+        ? count >= (state.quotas[opt.id] || 1)
+        : (isAreaMode && !selectedAreaInfo && (model.globalWeightsById[opt.id] || 0) <= 1e-9);
 
       let areaRowHtml = '';
       if (isAreaMode && selectedAreaInfo) {
@@ -3471,9 +3646,10 @@
         const aCapLabel = aCount >= aMaxCap
           ? String(aMaxCap)
           : formatRangeTarget(Math.min(aMinCap, aMaxCap), aMaxCap);
+        const groupLabel = selectedAreaInfo.displayGroupLabel;
         areaRowHtml = `
           <div class="date-area-row">
-            <span class="truncate" title="${xmlEscape(selectedEmp.area)}">${xmlEscape(selectedEmp.area)}</span>
+            <span class="truncate" title="${xmlEscape(groupLabel)}">${xmlEscape(groupLabel)}</span>
             <strong class="tabular">${aCount} / ${aCapLabel}</strong>
           </div>`;
       }
@@ -3483,7 +3659,7 @@
         : (state.mode === 'balanced' ? ` / ${state.quotas[opt.id] || 1}` : '');
 
       const topBadge = isFullForArea
-        ? `<span class="full-pill" title="Cupo completo para ${xmlEscape(selectedEmp.area)} en esta fecha">Cupo lleno</span>`
+        ? `<span class="full-pill" title="Cupo completo para ${xmlEscape(selectedAreaInfo.displayGroupLabel)} en esta fecha">Cupo lleno</span>`
         : `<span class="date-pct tabular">${pct}</span>`;
 
       return `
@@ -3582,12 +3758,12 @@
     }
     lastFlashedId = null;
 
-    // ---- Tab 2: Dynamic Summary by Area (6 roulette dates + exclusive manual dates) ----
+    // ---- Tab 2: Dynamic Summary by Area (4 roulette dates + exclusive manual dates) ----
     const exclusiveOpts = getExclusiveAssignedOptions();
     const summaryCols = [...state.options, ...exclusiveOpts];
     const sumHead = document.getElementById('summaryThead');
     sumHead.innerHTML = `<tr>
-      <th>Área (meta en ruleta)</th>
+      <th>Área (regla en ruleta)</th>
       ${state.options.map(o => `<th class="center">${xmlEscape(o.shortLabel)}</th>`).join('')}
       ${exclusiveOpts.map(o => `<th class="center th-exclusive" title="Fecha manual exclusiva (NO aparece en la ruleta)">${xmlEscape(o.shortLabel)}<span class="area-meta-sub">Manual excl.</span></th>`).join('')}
       <th class="center">Pendientes</th>
@@ -3612,11 +3788,21 @@
       }).length);
       const pend = aEmps.filter(e => !state.assignments[e.id]).length;
       const tot = aEmps.length;
-      const minT = areaModel ? areaModel.minTarget : Math.floor(tot / k);
-      const maxT = areaModel ? areaModel.maxTarget : Math.ceil(tot / k);
-      const metaDesc = areaModel && areaModel.hardCap !== null
-        ? `Máx. ${maxT} / fecha${areaModel.exclusiveAssigned > 0 ? ` (+${areaModel.exclusiveAssigned} excl.)` : ''}`
-        : `Meta: ${formatRangeTarget(minT, maxT)} / fecha`;
+      const ownExcl = areaModel ? areaModel.ownExclusiveAssigned : 0;
+      const exclSuffix = ownExcl > 0 ? ` (+${ownExcl} excl.)` : '';
+      let metaDesc = '';
+      if (stripAccents(area) === 'mantenimiento zonas humedas') {
+        metaDesc = `En grupo Mantenimiento${exclSuffix}`;
+      } else if (areaModel && areaModel.ruleLabel) {
+        const grpNote = areaModel.isGrouped ? ' · con Z. Húmedas' : '';
+        metaDesc = `Regla: ${areaModel.ruleLabel}${grpNote}${exclSuffix}`;
+      } else {
+        const minT = areaModel ? areaModel.minTarget : Math.floor(tot / k);
+        const maxT = areaModel ? areaModel.maxTarget : Math.ceil(tot / k);
+        metaDesc = pend === 0 && ownExcl > 0
+          ? `100% pre-registrado${exclSuffix}`
+          : `Meta: ${formatRangeTarget(minT, maxT)} / fecha${exclSuffix}`;
+      }
 
       c.forEach((v, i) => totals[i] += v);
       totals[numDateCols] += pend;
@@ -3629,8 +3815,15 @@
           </td>
           ${c.map((v, colIdx) => {
             const isExclCol = colIdx >= state.options.length;
-            const overCap = !isExclCol && v > maxT && (area !== 'Administrativa');
-            return `<td class="center tabular ${overCap ? 'cell-over-cap' : ''}"${overCap ? ` title="Supera el cupo de ${maxT} por fecha"` : ''}>${v}</td>`;
+            const optObj = summaryCols[colIdx];
+            const dateCap = !isExclCol && areaModel && areaModel.ruleMaxCapById
+              ? areaModel.ruleMaxCapById[optObj.id]
+              : Infinity;
+            const groupCountForDate = !isExclCol && areaModel && areaModel.countsById
+              ? (areaModel.countsById[optObj.id] || 0)
+              : v;
+            const overCap = !isExclCol && areaModel && areaModel.hasCustomRule && Number.isFinite(dateCap) && groupCountForDate > dateCap;
+            return `<td class="center tabular ${overCap ? 'cell-over-cap' : ''}"${overCap ? ` title="Supera el cupo de ${dateCap} por fecha"` : ''}>${v}</td>`;
           }).join('')}
           <td class="center tabular" style="color:var(--text-muted);">${pend}</td>
           <td class="center tabular" style="font-weight:700;">${tot}</td>
@@ -3638,17 +3831,17 @@
     }).join('');
 
     const totalEmps = totals[numDateCols + 1];
-    const gMinT = eqModel.globalMinTarget;
-    const gMaxT = eqModel.globalMaxTarget;
     sumBody.innerHTML = areaHtml + `
       <tr class="total-row">
         <td>
           TOTAL QUIRAMA
-          <span class="area-meta-sub">Ruleta: ${formatRangeTarget(gMinT, gMaxT)} / fecha${eqModel.totalExclusiveAssigned > 0 ? ` (+${eqModel.totalExclusiveAssigned} excl.)` : ''}</span>
+          <span class="area-meta-sub">Ruleta: ${eqModel.rouletteTotalEmps} en ${state.options.length} fechas${eqModel.totalExclusiveAssigned > 0 ? ` (+${eqModel.totalExclusiveAssigned} manual excl.)` : ''}</span>
         </td>
         ${totals.slice(0, numDateCols).map((v, colIdx) => {
           const isExclCol = colIdx >= state.options.length;
-          return `<td class="center tabular ${!isExclCol && v > gMaxT ? 'cell-over-cap' : ''}">${v}</td>`;
+          const optObj = summaryCols[colIdx];
+          const gCap = !isExclCol ? (eqModel.globalMaxCapById[optObj.id] || eqModel.globalMaxTarget) : Infinity;
+          return `<td class="center tabular ${!isExclCol && v > gCap ? 'cell-over-cap' : ''}">${v}</td>`;
         }).join('')}
         <td class="center tabular" style="color:var(--text-muted);">${totals[numDateCols]}</td>
         <td class="center tabular">${totalEmps}</td>
@@ -3809,6 +4002,97 @@
     updateAdminClearButton();
   }
 
+  function getRouletteSpunEmployees() {
+    return state.employees.filter(emp => {
+      if (isPreRegisteredLocked(emp.id)) return false;
+      const rec = state.assignments[emp.id];
+      if (rec) {
+        return !rec.isManual && rec.mode !== 'manual';
+      }
+      if (state.pendingSpins && state.pendingSpins[emp.id]) return true;
+      return hasSpunRoulette(emp.id);
+    });
+  }
+
+  function renderAdminDeleteSpinSelector() {
+    const sel = document.getElementById('adminDeleteSpinSelect');
+    const btn = document.getElementById('btnAdminDeleteSpin');
+    if (!sel || !btn) return;
+    const spunEmps = getRouletteSpunEmployees();
+    if (spunEmps.length === 0) {
+      sel.innerHTML = '<option value="">No hay tiros de ruleta registrados aún</option>';
+      sel.disabled = true;
+      btn.disabled = true;
+      return;
+    }
+    sel.disabled = false;
+    btn.disabled = false;
+    sel.innerHTML = spunEmps.map(emp => {
+      const rec = state.assignments[emp.id];
+      const pend = !rec && state.pendingSpins ? state.pendingSpins[emp.id] : null;
+      const opt = rec ? resolveAssignedOption(rec) : (pend ? resolveAssignedOption(pend) : null);
+      const detail = rec
+        ? `${opt ? opt.shortLabel : 'Asignado'} (Tiro ${rec.spinCount === 2 ? '2/2' : '1/2'})`
+        : (pend ? `${opt ? opt.shortLabel : 'Por confirmar'} (Tiro 1/2 sin confirmar)` : 'Giro en historial');
+      return `<option value="${emp.id}">[${xmlEscape(emp.area)}] ${xmlEscape(emp.name)} — ${xmlEscape(detail)}</option>`;
+    }).join('');
+    if (selectedPersonId && spunEmps.some(e => e.id === selectedPersonId)) {
+      sel.value = String(selectedPersonId);
+    }
+  }
+
+  function confirmAdminDeleteSpin(empId) {
+    const emp = state.employees.find(x => x.id === Number(empId));
+    if (!emp) return;
+    const rec = state.assignments[emp.id];
+    const pend = state.pendingSpins && state.pendingSpins[emp.id];
+    if (isPreRegisteredLocked(emp.id) || (rec && (rec.isManual || rec.mode === 'manual'))) {
+      showToast(`🔒 ${emp.name} tiene una fecha registrada manualmente y está protegida.`, '🔒');
+      return;
+    }
+    const opt = rec ? resolveAssignedOption(rec) : (pend ? resolveAssignedOption(pend) : null);
+    const dateLabel = opt ? opt.label : '';
+    openConfirm(
+      '¿Eliminar tiro de ruleta?',
+      `Se eliminará el tiro de ruleta de ${emp.name}${dateLabel ? ' (' + dateLabel + ')' : ''}${syncUrl ? ' aquí y en Google Drive' : ''}. Volverá a estado Pendiente con sus 2 tiros disponibles. Las fechas manuales no se modifican.`,
+      async () => {
+        delete state.assignments[emp.id];
+        if (state.pendingSpins) delete state.pendingSpins[emp.id];
+        const empUpper = String(emp.name || '').trim().toUpperCase();
+        state.history = state.history
+          .filter(h => {
+            if (!h) return false;
+            if (h.isManual || h.mode === 'manual') return true;
+            const matchesEmp = (h.empId !== undefined && h.empId !== null && Number(h.empId) === emp.id) ||
+              (h.name && String(h.name).trim().toUpperCase() === empUpper);
+            return !matchesEmp;
+          })
+          .map((h, idx) => ({ ...h, order: idx + 1 }));
+        if (lastSpinRecord && lastSpinRecord.empId === emp.id) lastSpinRecord = null;
+        if (activeDecisionEmpId === emp.id) {
+          activeDecisionEmpId = null;
+          closeModal('modalSpinDecision');
+        }
+        saveState();
+        document.getElementById('resultBanner').classList.add('hidden');
+        document.getElementById('liveTicker').textContent = 'Listo para sortear';
+
+        let driveWarning = '';
+        if (syncUrl) {
+          const res = await postToDrive({ action: 'adminClearSpin', empId: emp.id });
+          if (res && !res.ok) {
+            driveWarning = res.error && String(res.error).includes('desconocida')
+              ? ' (Actualiza apps-script/Code.gs en Drive para sincronizar la eliminación)'
+              : ` (${res.error || 'No se pudo confirmar en Drive'})`;
+          }
+        }
+        selectedPersonId = emp.id;
+        renderAll();
+        showToast(`Tiro de ${emp.name} eliminado. Quedó pendiente con 2 tiros disponibles.${driveWarning}`, '↺');
+      }
+    );
+  }
+
   function confirmClearManualAssignment(empId) {
     const emp = state.employees.find(x => x.id === Number(empId));
     if (!emp) return;
@@ -3836,18 +4120,19 @@
   function syncSettingsModal() {
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
     const model = computeEquityModel();
-    const gRange = formatRangeTarget(model.globalMinTarget, model.globalMaxTarget);
 
     const areaPreview = document.getElementById('equityTargetsPreview');
     if (areaPreview) {
-      const areasOrdered = Object.values(model.byArea);
       const chips = [
-        `<span class="equity-chip highlight"><strong>Ruleta (${model.rouletteTotalEmps}):</strong> ${gRange} / fecha</span>`
-      ].concat(areasOrdered.map((a) => {
-        const capTxt = a.hardCap !== null
-          ? `máx. ${a.maxTarget} / fecha${a.exclusiveAssigned > 0 ? ` (+${a.exclusiveAssigned} excl.)` : ''}`
-          : `${formatRangeTarget(a.minTarget, a.maxTarget)} / fecha`;
-        return `<span class="equity-chip ${a.hardCap !== null ? 'highlight' : ''}"><strong>${xmlEscape(a.area)} (${a.total}):</strong> ${capTxt}</span>`;
+        `<span class="equity-chip highlight"><strong>Ruleta (${model.rouletteTotalEmps}):</strong> ${state.options.length} fechas</span>`
+      ].concat((model.byGroupList || []).map((g) => {
+        const exclTxt = g.exclusiveAssigned > 0 ? ` (+${g.exclusiveAssigned} manual excl.)` : '';
+        const ruleTxt = g.ruleLabel
+          ? `${g.ruleLabel}${exclTxt}`
+          : (g.pending === 0 && g.exclusiveAssigned > 0
+              ? `100% manual${exclTxt}`
+              : `${formatRangeTarget(g.minTarget, g.maxTarget)} / fecha${exclTxt}`);
+        return `<span class="equity-chip ${g.hasCustomRule ? 'highlight' : ''}"><strong>${xmlEscape(g.displayGroupLabel)} (${g.total}):</strong> ${xmlEscape(ruleTxt)}</span>`;
       }));
       areaPreview.innerHTML = chips.join('');
     }
@@ -3863,7 +4148,10 @@
 
     const adminDetails = document.getElementById('adminManualDetails');
     if (adminDetails) adminDetails.open = false;
+    const adminDeleteDetails = document.getElementById('adminDeleteSpinDetails');
+    if (adminDeleteDetails) adminDeleteDetails.open = false;
     renderAdminManualSelector();
+    renderAdminDeleteSpinSelector();
   }
 
   // =========================================================================
@@ -4183,7 +4471,7 @@
     openConfirm(
       '¿Reiniciar los giros de la ruleta?',
       syncUrl
-        ? 'Se reiniciarán únicamente los 31 participantes pendientes tanto aquí como en Google Drive. Los 13 descansos manuales pre-registrados y las 6 fechas se conservarán intactos.'
+        ? 'Se reiniciarán únicamente los 31 participantes pendientes tanto aquí como en Google Drive. Los 13 descansos manuales pre-registrados y las 4 fechas de la ruleta se conservarán intactos.'
         : 'Se borrarán los giros de ruleta de los 31 participantes pendientes. Los 13 descansos manuales pre-registrados se conservarán intactos.',
       async () => {
         state.assignments = buildPreRegisteredAssignments(state.options);
@@ -4266,7 +4554,7 @@
   document.getElementById('btnAutoDistributeQuotas').addEventListener('click', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedOptions().length);
+    const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedCount(state.assignments, state.options));
     const even = normalizeQuotas(null, state.options, rouletteCount);
     renderQuotaInputs(even);
   });
@@ -4281,7 +4569,7 @@
     document.querySelectorAll('.quota-input').forEach(inp => {
       nextQuotas[inp.dataset.optId] = Math.max(1, parseInt(inp.value, 10) || 1);
     });
-    const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedOptions().length);
+    const rouletteCount = Math.max(1, state.employees.length - getExclusiveAssignedCount(state.assignments, state.options));
     state.quotas = normalizeQuotas(nextQuotas, state.options, rouletteCount);
     saveState();
     closeModal('modalSettings');
@@ -4289,14 +4577,14 @@
     renderAll();
     const eqPct = formatPct(1 / Math.max(1, state.options.length));
     const msg = state.mode === 'area_balanced'
-      ? 'Modo activo: Equitativo estricto por área (Bar y Producción máx. 2/fecha)'
+      ? 'Modo activo: Reglas estrictas por área y fecha'
       : (state.mode === 'balanced'
           ? 'Modo activo: Cupos globales personalizados'
           : `Modo activo: Azar libre (${eqPct} c/u)`);
     showToast(msg, '✓');
   });
 
-  // Discreet Admin Manual Assignment inside Settings
+  // Discreet Admin Tools inside Settings (Manual Assignment & Delete Roulette Spin)
   document.getElementById('adminManualEmpSelect').addEventListener('change', updateAdminClearButton);
 
   document.getElementById('btnOpenAdminManual').addEventListener('click', () => {
@@ -4313,6 +4601,14 @@
     if (!empId) return;
     closeModal('modalSettings');
     confirmClearManualAssignment(empId);
+  });
+
+  document.getElementById('btnAdminDeleteSpin').addEventListener('click', () => {
+    const sel = document.getElementById('adminDeleteSpinSelect');
+    const empId = sel ? Number(sel.value) : 0;
+    if (!empId) return;
+    closeModal('modalSettings');
+    confirmAdminDeleteSpin(empId);
   });
 
   // Company Logo controls
@@ -4403,6 +4699,8 @@
         const resolvedMode = ['area_balanced', 'balanced', 'equal'].includes(parsed.mode)
           ? parsed.mode
           : 'area_balanced';
+        const restoredAssignments = parsed.assignments && typeof parsed.assignments === 'object' ? parsed.assignments : {};
+        const exclCount = getExclusiveAssignedCount(restoredAssignments, opts);
         state = {
           ...defaultState(),
           ...parsed,
@@ -4410,7 +4708,7 @@
           equityVersion: EQUITY_SCHEMA_VERSION,
           options: opts,
           pendingSpins: parsed.pendingSpins && typeof parsed.pendingSpins === 'object' ? parsed.pendingSpins : {},
-          quotas: normalizeQuotas(parsed.quotas, opts, Math.max(1, parsed.employees.length - EXCLUSIVE_MANUAL_OPTIONS.length))
+          quotas: normalizeQuotas(parsed.quotas, opts, Math.max(1, parsed.employees.length - exclCount))
         };
         saveState();
         closeModal('modalSettings');

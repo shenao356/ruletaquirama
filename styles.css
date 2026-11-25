@@ -862,7 +862,7 @@ a:hover {
 
 @media (min-width: 640px) {
   .date-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(145px, 1fr));
   }
 }
 
@@ -1609,6 +1609,13 @@ table.data-table {
   background: transparent;
   padding: 8px 12px;
   font-size: 12px;
+  opacity: 0.78;
+  transition: opacity 0.15s ease;
+}
+
+.admin-details:hover,
+.admin-details[open] {
+  opacity: 1;
 }
 
 .admin-details-summary {
@@ -1640,6 +1647,49 @@ table.data-table {
 .admin-details-body {
   margin-top: 10px;
   padding-top: 10px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-subdetails {
+  margin-top: 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border);
+  background: var(--bg);
+}
+
+.admin-subdetails-summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 11.5px;
+  user-select: none;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.admin-subdetails-summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-subdetails-summary::after {
+  content: '▸';
+  font-size: 10.5px;
+  transition: transform 0.15s ease;
+}
+
+.admin-subdetails[open] .admin-subdetails-summary::after {
+  transform: rotate(90deg);
+}
+
+.admin-subdetails-body {
+  margin-top: 8px;
+  padding-top: 8px;
   border-top: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
