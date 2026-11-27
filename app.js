@@ -406,6 +406,12 @@
   let remoteScriptVersion = 1;
   let pollTimer = null;
   let isSyncInFlight = false;
+  let pendingDriveWritesCount = 0;
+  let driveWriteQueue = Promise.resolve();
+  const inFlightEmpWrites = {};
+  const provisionalTokenByEmp = {};
+  const provisionalAbortedEmp = {};
+  let lastShownResultEmpId = null;
 
   let selectedPersonId = null;
   let statusFilter = 'pending';
@@ -424,6 +430,8 @@
   let pointerDeflection = 0;
   let pointerVelocity = 0;
   let audioCtx = null;
+  let wheelFrameCache = { key: '', canvas: null };
+  let wheelDiscCache = { key: '', canvas: null };
 
   function defaultState() {
     const options = DEFAULT_OPTIONS_RAW.map((o, i) => normalizeOption(o, i));
@@ -718,7 +726,7 @@
   // =========================================================================
   // 4. GOOGLE DRIVE LIVE SYNC ENGINE (Apps Script JSON API)
   // =========================================================================
-  function applyRemoteState(remote) {
+  function applyRemoteState(remote, { preserveInFlightExceptEmpId = null } = {}) {
     if (!remote || !remote.ok || !Array.isArray(remote.employees)) return;
     const remoteVer = Number(remote.scriptVersion || 1);
     remoteScriptVersion = remoteVer;
@@ -811,6 +819,14 @@
         }
       }
     }
+    // Preserve optimistic local assignments for any other employee whose Drive write is still queued
+    for (const [kId, cnt] of Object.entries(inFlightEmpWrites)) {
+      if (cnt <= 0) continue;
+      if (preserveInFlightExceptEmpId !== null && String(preserveInFlightExceptEmpId) === String(kId)) continue;
+      if (prevAssignments[kId]) {
+        nextAssignments[kId] = prevAssignments[kId];
+      }
+    }
     state.assignments = nextAssignments;
 
     // Pending 1st spins awaiting user confirmation
@@ -839,6 +855,13 @@
             ? { ...pRec, optionId: matchedOpt.id, optionLabel: matchedOpt.label, optionDays: matchedOpt.days }
             : pRec;
         }
+      }
+    }
+    for (const [kId, cnt] of Object.entries(inFlightEmpWrites)) {
+      if (cnt <= 0) continue;
+      if (preserveInFlightExceptEmpId !== null && String(preserveInFlightExceptEmpId) === String(kId)) continue;
+      if (prevPendingSpins[kId] && !nextAssignments[kId]) {
+        nextPendingSpins[kId] = prevPendingSpins[kId];
       }
     }
     state.pendingSpins = nextPendingSpins;
@@ -903,8 +926,9 @@
     }
   }
 
-  async function syncFromDrive({ silent = true } = {}) {
+  async function syncFromDrive({ silent = true, force = false } = {}) {
     if (!syncUrl || isSyncInFlight) return false;
+    if (pendingDriveWritesCount > 0 && !force) return false;
     isSyncInFlight = true;
     if (!silent) {
       syncStatus = 'syncing';
@@ -919,6 +943,9 @@
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       if (!data || !data.ok) throw new Error(data?.error || 'Respuesta inválida de Drive');
+
+      // If a local write started while this GET was in flight, do not overwrite it with an older snapshot
+      if (pendingDriveWritesCount > 0 && !force) return false;
 
       applyRemoteState(data);
       syncStatus = 'connected';
@@ -938,7 +965,29 @@
     }
   }
 
-  async function postToDrive(payload) {
+  function enqueueDriveWrite(empId, taskFn) {
+    if (!syncUrl) return Promise.resolve(null);
+    pendingDriveWritesCount++;
+    const key = empId !== null && empId !== undefined ? String(empId) : null;
+    if (key !== null) inFlightEmpWrites[key] = (inFlightEmpWrites[key] || 0) + 1;
+    renderSyncUi();
+    const job = driveWriteQueue.then(async () => {
+      try {
+        return await taskFn();
+      } finally {
+        pendingDriveWritesCount = Math.max(0, pendingDriveWritesCount - 1);
+        if (key !== null) {
+          inFlightEmpWrites[key] = Math.max(0, (inFlightEmpWrites[key] || 1) - 1);
+          if (inFlightEmpWrites[key] === 0) delete inFlightEmpWrites[key];
+        }
+        renderSyncUi();
+      }
+    });
+    driveWriteQueue = job.catch(() => {});
+    return job;
+  }
+
+  async function postToDriveRaw(payload) {
     if (!syncUrl) return null;
     try {
       syncStatus = 'syncing';
@@ -951,8 +1000,11 @@
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (data && data.state) {
-        applyRemoteState(data.state);
+      const isLastQueued = pendingDriveWritesCount <= 1;
+      if (data && data.state && (isLastQueued || data.conflict || data.quotaConflict)) {
+        applyRemoteState(data.state, {
+          preserveInFlightExceptEmpId: payload && payload.empId !== undefined ? payload.empId : null
+        });
       }
       syncStatus = 'connected';
       syncErrorMsg = '';
@@ -967,11 +1019,17 @@
     }
   }
 
+  function postToDrive(payload) {
+    if (!syncUrl) return Promise.resolve(null);
+    const empId = payload && payload.empId !== undefined ? payload.empId : null;
+    return enqueueDriveWrite(empId, () => postToDriveRaw(payload));
+  }
+
   function startPolling() {
     stopPolling();
     if (!syncUrl) return;
     pollTimer = setInterval(() => {
-      if (!isSpinning && !document.hidden) {
+      if (!isSpinning && !document.hidden && pendingDriveWritesCount === 0) {
         syncFromDrive({ silent: true });
       }
     }, Math.max(3000, Number(CONFIG.POLL_INTERVAL_MS) || 5000));
@@ -999,15 +1057,19 @@
     const btnPushLocal = document.getElementById('btnPushLocalToDrive');
     const btnDisconnect = document.getElementById('btnDisconnectDrive');
 
-    const dotClass = syncStatus === 'connected' ? 'sync-dot connected'
-      : syncStatus === 'syncing' ? 'sync-dot syncing'
-      : syncStatus === 'error' ? 'sync-dot error'
+    const effectiveStatus = pendingDriveWritesCount > 0 && syncStatus !== 'error'
+      ? 'syncing'
+      : syncStatus;
+
+    const dotClass = effectiveStatus === 'connected' ? 'sync-dot connected'
+      : effectiveStatus === 'syncing' ? 'sync-dot syncing'
+      : effectiveStatus === 'error' ? 'sync-dot error'
       : 'sync-dot';
 
     dot.className = dotClass;
     modalDot.className = dotClass;
 
-    if (syncStatus === 'connected') {
+    if (effectiveStatus === 'connected') {
       btn.className = 'btn btn-sync-ok';
       label.textContent = 'Drive en vivo';
       noticeBar.classList.add('hidden');
@@ -1022,12 +1084,14 @@
       btnShare.classList.remove('hidden');
       btnPushLocal.classList.remove('hidden');
       btnDisconnect.classList.remove('hidden');
-    } else if (syncStatus === 'syncing') {
-      btn.className = 'btn';
-      label.textContent = 'Sincronizando...';
+    } else if (effectiveStatus === 'syncing') {
+      btn.className = pendingDriveWritesCount > 0 ? 'btn btn-sync-ok' : 'btn';
+      label.textContent = pendingDriveWritesCount > 0 ? 'Guardando...' : 'Sincronizando...';
       noticeBar.classList.add('hidden');
       btnSyncNow.classList.remove('hidden');
-      modalText.textContent = 'Conectando con Google Drive...';
+      modalText.textContent = pendingDriveWritesCount > 0
+        ? `Guardando en Google Drive (${pendingDriveWritesCount} pendiente${pendingDriveWritesCount === 1 ? '' : 's'})...`
+        : 'Conectando con Google Drive...';
     } else if (syncStatus === 'error') {
       btn.className = 'btn';
       label.textContent = 'Error Drive';
@@ -2544,29 +2608,38 @@
     wheelCanvas.width = Math.round(cssSize * dpr);
     wheelCanvas.height = Math.round(cssSize * dpr);
     wCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    wheelFrameCache.key = '';
+    wheelDiscCache.key = '';
     drawWheel();
   }
 
-  function drawWheel(overrideSectors = null) {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const size = wheelCanvas.width / dpr;
+  function getWheelFrameCanvas(size, dpr, dark) {
+    const key = `${size}|${dpr}|${dark ? 1 : 0}`;
+    if (wheelFrameCache.key === key && wheelFrameCache.canvas) {
+      return wheelFrameCache.canvas;
+    }
+    const off = document.createElement('canvas');
+    off.width = Math.round(size * dpr);
+    off.height = Math.round(size * dpr);
+    const ctx = off.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
     const cx = size / 2;
     const cy = size / 2 + 6;
     const outerR = size * 0.455;
     const wheelR = outerR - 12;
-    const dark = isDarkTheme();
 
-    wCtx.clearRect(0, 0, size, size);
+    // Fast radial-gradient drop shadow (zero blur-filter overhead at 60 FPS)
+    const shadowGrad = ctx.createRadialGradient(cx, cy + 5, outerR * 0.86, cx, cy + 5, outerR + 11);
+    shadowGrad.addColorStop(0, dark ? 'rgba(0, 0, 0, 0.46)' : 'rgba(16, 24, 20, 0.16)');
+    shadowGrad.addColorStop(0.75, dark ? 'rgba(0, 0, 0, 0.22)' : 'rgba(16, 24, 20, 0.08)');
+    shadowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy + 5, outerR + 11, 0, TWO_PI);
+    ctx.fillStyle = shadowGrad;
+    ctx.fill();
 
-    wCtx.save();
-    wCtx.beginPath();
-    wCtx.arc(cx, cy + 4, outerR, 0, TWO_PI);
-    wCtx.fillStyle = dark ? 'rgba(0, 0, 0, 0.5)' : 'rgba(16, 24, 20, 0.14)';
-    wCtx.filter = 'blur(8px)';
-    wCtx.fill();
-    wCtx.restore();
-
-    const rimGrad = wCtx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR, cy + outerR);
+    const rimGrad = ctx.createLinearGradient(cx - outerR, cy - outerR, cx + outerR, cy + outerR);
     if (dark) {
       rimGrad.addColorStop(0, '#e8ce89');
       rimGrad.addColorStop(0.5, '#a98130');
@@ -2576,53 +2649,71 @@
       rimGrad.addColorStop(0.45, '#c99e44');
       rimGrad.addColorStop(1, '#8c651d');
     }
-    wCtx.beginPath();
-    wCtx.arc(cx, cy, outerR, 0, TWO_PI);
-    wCtx.fillStyle = rimGrad;
-    wCtx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, outerR, 0, TWO_PI);
+    ctx.fillStyle = rimGrad;
+    ctx.fill();
 
-    wCtx.beginPath();
-    wCtx.arc(cx, cy, wheelR + 2.5, 0, TWO_PI);
-    wCtx.fillStyle = '#181c1a';
-    wCtx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, wheelR + 2.5, 0, TWO_PI);
+    ctx.fillStyle = '#181c1a';
+    ctx.fill();
 
-    const sectors = Array.isArray(overrideSectors) && overrideSectors.length > 0
-      ? overrideSectors
-      : getWheelSectors(selectedPersonId);
+    wheelFrameCache = { key, canvas: off };
+    return off;
+  }
 
-    wCtx.save();
-    wCtx.translate(cx, cy);
-    wCtx.rotate(wheelAngle);
+  function getWheelDiscCanvas(sectors, size, dpr) {
+    const secSig = sectors
+      .map(s => `${s.optionId}:${s.option.colorMain}:${s.option.wheelTop}:${s.option.wheelBottom}:${s.startAngle.toFixed(4)}`)
+      .join('|');
+    const key = `${size}|${dpr}|${secSig}`;
+    if (wheelDiscCache.key === key && wheelDiscCache.canvas) {
+      return wheelDiscCache.canvas;
+    }
+
+    const off = document.createElement('canvas');
+    off.width = Math.round(size * dpr);
+    off.height = Math.round(size * dpr);
+    const ctx = off.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const half = size / 2;
+    const outerR = size * 0.455;
+    const wheelR = outerR - 12;
+
+    ctx.save();
+    ctx.translate(half, half);
 
     for (const sec of sectors) {
       const opt = sec.option;
       const midAngle = (sec.startAngle + sec.endAngle) / 2;
       const span = sec.endAngle - sec.startAngle;
 
-      const sliceGrad = wCtx.createRadialGradient(0, 0, 26, 0, 0, wheelR);
+      const sliceGrad = ctx.createRadialGradient(0, 0, 26, 0, 0, wheelR);
       sliceGrad.addColorStop(0, opt.colorDark);
       sliceGrad.addColorStop(0.58, opt.colorMain);
       sliceGrad.addColorStop(1, opt.colorLight);
 
-      wCtx.beginPath();
-      wCtx.moveTo(0, 0);
-      wCtx.arc(0, 0, wheelR, sec.startAngle, sec.endAngle);
-      wCtx.closePath();
-      wCtx.fillStyle = sliceGrad;
-      wCtx.fill();
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.arc(0, 0, wheelR, sec.startAngle, sec.endAngle);
+      ctx.closePath();
+      ctx.fillStyle = sliceGrad;
+      ctx.fill();
 
-      wCtx.strokeStyle = 'rgba(255, 248, 225, 0.42)';
-      wCtx.lineWidth = 1.6;
-      wCtx.stroke();
+      ctx.strokeStyle = 'rgba(255, 248, 225, 0.42)';
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
 
       if (span > 0.22) {
-        wCtx.save();
-        wCtx.rotate(midAngle);
-        wCtx.textAlign = 'right';
-        wCtx.textBaseline = 'middle';
-        wCtx.fillStyle = '#ffffff';
-        wCtx.shadowColor = 'rgba(0, 0, 0, 0.35)';
-        wCtx.shadowBlur = 3;
+        ctx.save();
+        ctx.rotate(midAngle);
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.35)';
+        ctx.shadowBlur = 3;
 
         const textR = wheelR - 17;
         const scale = size / 390;
@@ -2630,47 +2721,70 @@
         const fBot = Math.round((span < 0.5 ? 9 : 10) * scale);
 
         if (opt.wheelBottom) {
-          wCtx.font = `700 ${fTop}px 'Plus Jakarta Sans', system-ui, sans-serif`;
-          wCtx.fillText(opt.wheelTop, textR, -6.5 * scale);
-          wCtx.font = `600 ${fBot}px 'Plus Jakarta Sans', system-ui, sans-serif`;
-          wCtx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-          wCtx.fillText(opt.wheelBottom, textR, 7.5 * scale);
+          ctx.font = `700 ${fTop}px 'Plus Jakarta Sans', system-ui, sans-serif`;
+          ctx.fillText(opt.wheelTop, textR, -6.5 * scale);
+          ctx.font = `600 ${fBot}px 'Plus Jakarta Sans', system-ui, sans-serif`;
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+          ctx.fillText(opt.wheelBottom, textR, 7.5 * scale);
         } else {
-          wCtx.font = `700 ${fTop}px 'Plus Jakarta Sans', system-ui, sans-serif`;
-          wCtx.fillText(opt.wheelTop, textR, 0);
+          ctx.font = `700 ${fTop}px 'Plus Jakarta Sans', system-ui, sans-serif`;
+          ctx.fillText(opt.wheelTop, textR, 0);
         }
-        wCtx.restore();
+        ctx.restore();
       }
     }
 
-    wCtx.beginPath();
-    wCtx.arc(0, 0, 44 * (size / 390), 0, TWO_PI);
-    wCtx.strokeStyle = 'rgba(243, 225, 176, 0.65)';
-    wCtx.lineWidth = 2;
-    wCtx.stroke();
+    ctx.beginPath();
+    ctx.arc(0, 0, 44 * (size / 390), 0, TWO_PI);
+    ctx.strokeStyle = 'rgba(243, 225, 176, 0.65)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
 
     for (const sec of sectors) {
       const px = Math.cos(sec.startAngle) * (wheelR + 5.5);
       const py = Math.sin(sec.startAngle) * (wheelR + 5.5);
-      wCtx.beginPath();
-      wCtx.arc(px, py, 3.5, 0, TWO_PI);
-      wCtx.fillStyle = '#fff3cf';
-      wCtx.fill();
-      wCtx.strokeStyle = '#6c4d14';
-      wCtx.lineWidth = 1.1;
-      wCtx.stroke();
+      ctx.beginPath();
+      ctx.arc(px, py, 3.5, 0, TWO_PI);
+      ctx.fillStyle = '#fff3cf';
+      ctx.fill();
+      ctx.strokeStyle = '#6c4d14';
+      ctx.lineWidth = 1.1;
+      ctx.stroke();
     }
 
+    ctx.restore();
+    wheelDiscCache = { key, canvas: off };
+    return off;
+  }
+
+  function drawWheel(overrideSectors = null) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const size = wheelCanvas.width / dpr;
+    const cx = size / 2;
+    const cy = size / 2 + 6;
+    const outerR = size * 0.455;
+    const dark = isDarkTheme();
+
+    const sectors = Array.isArray(overrideSectors) && overrideSectors.length > 0
+      ? overrideSectors
+      : getWheelSectors(selectedPersonId);
+
+    const frameCanvas = getWheelFrameCanvas(size, dpr, dark);
+    const discCanvas = getWheelDiscCanvas(sectors, size, dpr);
+
+    wCtx.clearRect(0, 0, size, size);
+    wCtx.drawImage(frameCanvas, 0, 0, size, size);
+
+    wCtx.save();
+    wCtx.translate(cx, cy);
+    wCtx.rotate(wheelAngle);
+    wCtx.drawImage(discCanvas, -size / 2, -size / 2, size, size);
     wCtx.restore();
 
     wCtx.save();
     wCtx.translate(cx, cy - outerR - 4);
     wCtx.rotate(pointerDeflection);
 
-    wCtx.save();
-    wCtx.shadowColor = 'rgba(0,0,0,0.35)';
-    wCtx.shadowBlur = 5;
-    wCtx.shadowOffsetY = 2;
     wCtx.beginPath();
     wCtx.moveTo(-12, -2);
     wCtx.lineTo(12, -2);
@@ -2685,7 +2799,6 @@
     wCtx.strokeStyle = '#ffffff';
     wCtx.lineWidth = 1.6;
     wCtx.stroke();
-    wCtx.restore();
 
     wCtx.beginPath();
     wCtx.arc(0, 2, 4.5, 0, TWO_PI);
@@ -2709,9 +2822,9 @@
     const originX = window.innerWidth * 0.55;
     const originY = Math.min(340, window.innerHeight * 0.4);
 
-    confettiParticles = Array.from({ length: 68 }, () => {
+    confettiParticles = Array.from({ length: 42 }, () => {
       const angle = -Math.PI / 2 + (Math.random() - 0.5) * 1.9;
-      const speed = 4 + Math.random() * 7.5;
+      const speed = 4.5 + Math.random() * 7.5;
       return {
         x: originX + (Math.random() - 0.5) * 60,
         y: originY + (Math.random() - 0.5) * 30,
@@ -2732,10 +2845,10 @@
       for (const p of confettiParticles) {
         p.x += p.vx;
         p.y += p.vy;
-        p.vy += 0.22;
-        p.vx *= 0.988;
+        p.vy += 0.24;
+        p.vx *= 0.986;
         p.rot += p.vrot;
-        p.life -= 0.014;
+        p.life -= 0.022;
         if (p.life > 0) {
           alive++;
           cCtx.save();
@@ -2781,7 +2894,14 @@
       return;
     }
 
-    if (syncUrl) {
+    // Only pause to sync before spinning if we haven't synced recently (>8s) and have no local writes queued;
+    // Drive v7 still validates quotas & duplicates atomically on save.
+    const needsFreshSync = Boolean(
+      syncUrl &&
+      pendingDriveWritesCount === 0 &&
+      (!lastSyncAt || (Date.now() - lastSyncAt.getTime()) > 8000)
+    );
+    if (needsFreshSync) {
       isSpinning = true;
       updateSpinButtons();
       document.getElementById('btnSpinText').textContent = 'Verificando...';
@@ -2826,12 +2946,15 @@
     const desiredMod = normalizeAngle(POINTER_SCREEN_ANGLE - targetLocalAngle);
     const currentMod = normalizeAngle(wheelAngle);
     const deltaMod = normalizeAngle(desiredMod - currentMod);
-    const extraTurns = 6 + cryptoRandomInt(4);
+    const extraTurns = 5 + cryptoRandomInt(3);
 
     const startAngle = wheelAngle;
     const totalDelta = extraTurns * TWO_PI + deltaMod;
-    const duration = 5000 + cryptoRandomInt(700);
+    const duration = 3400 + cryptoRandomInt(450);
     const startTime = performance.now();
+
+    // Warm the offscreen disc cache before frame 1 so animation starts at locked 60 FPS
+    drawWheel(sectors);
 
     let lastSectorIdx = getSectorAtWheelAngle(wheelAngle, sectors).index;
     const liveTicker = document.getElementById('liveTicker');
@@ -2840,7 +2963,7 @@
     function animate(now) {
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / duration);
-      const eased = 1 - Math.pow(1 - t, 4.3);
+      const eased = 1 - Math.pow(1 - t, 3.6);
       const prevAngle = wheelAngle;
       wheelAngle = startAngle + totalDelta * eased;
 
@@ -2885,7 +3008,7 @@
     requestAnimationFrame(animate);
   }
 
-  async function handleFirstSpinResult(emp, option) {
+  function handleFirstSpinResult(emp, option) {
     isSpinning = false;
     const nowIso = new Date().toISOString();
 
@@ -2906,9 +3029,16 @@
     document.getElementById('liveTicker').innerHTML =
       `<span class="date-dot" style="background:${option.colorMain};"></span><strong style="color:var(--text);">1.er tiro: ${xmlEscape(option.label)} · Esperando confirmación</strong>`;
 
-    // If Apps Script v4 is active, reserve the provisional 1st spin atomically in Google Drive
+    // Show the decision modal IMMEDIATELY (0ms lag) while Drive reserves the 1st spin in the background
+    renderAll();
+    openSpinDecisionModal(emp.id);
+
     if (syncUrl && remoteScriptVersion >= 4) {
-      const res = await postToDrive({
+      const token = `${emp.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      provisionalTokenByEmp[emp.id] = token;
+      delete provisionalAbortedEmp[emp.id];
+
+      postToDrive({
         action: 'recordSpin',
         empId: emp.id,
         optionId: option.id,
@@ -2921,26 +3051,41 @@
         isManual: false,
         spinNumber: 1,
         provisional: true
+      }).then((res) => {
+        // Ignore stale Spin 1 results if the user already discarded it for Spin 2
+        if (provisionalTokenByEmp[emp.id] !== token) return;
+        if (res && res.quotaConflict) {
+          provisionalAbortedEmp[emp.id] = true;
+          delete state.pendingSpins[emp.id];
+          if (state.assignments[emp.id] && !state.assignments[emp.id].isManual && state.assignments[emp.id].spinCount === 1) {
+            delete state.assignments[emp.id];
+          }
+          saveState();
+          if (activeDecisionEmpId === emp.id) {
+            activeDecisionEmpId = null;
+            closeModal('modalSpinDecision');
+          }
+          if (lastShownResultEmpId === emp.id) {
+            document.getElementById('resultBanner').classList.add('hidden');
+          }
+          document.getElementById('liveTicker').textContent = 'Cupo actualizado · Gira nuevamente';
+          renderAll();
+          showToast(res.error || '⚠️ Esa fecha acaba de completar su cupo equitativo en otro dispositivo. Gira nuevamente.', '⚠️');
+          return;
+        }
+        if (res && res.conflict) {
+          provisionalAbortedEmp[emp.id] = true;
+          delete state.pendingSpins[emp.id];
+          saveState();
+          if (activeDecisionEmpId === emp.id) {
+            activeDecisionEmpId = null;
+            closeModal('modalSpinDecision');
+          }
+          renderAll();
+          showToast(res.error || `🔒 ${emp.name} ya completó su turno en otro dispositivo.`, '🔒');
+        }
       });
-      if (res && res.quotaConflict) {
-        delete state.pendingSpins[emp.id];
-        saveState();
-        document.getElementById('liveTicker').textContent = 'Cupo actualizado · Gira nuevamente';
-        renderAll();
-        showToast(res.error || '⚠️ Esa fecha acaba de completar su cupo equitativo en otro dispositivo. Gira nuevamente.', '⚠️');
-        return;
-      }
-      if (res && res.conflict) {
-        delete state.pendingSpins[emp.id];
-        saveState();
-        renderAll();
-        showToast(res.error || `🔒 ${emp.name} ya completó su turno en otro dispositivo.`, '🔒');
-        return;
-      }
     }
-
-    renderAll();
-    openSpinDecisionModal(emp.id);
   }
 
   function openSpinDecisionModal(empId) {
@@ -2999,14 +3144,13 @@
       return;
     }
 
-    const btnKeep = document.getElementById('btnKeepFirstSpin');
-    const btnSecond = document.getElementById('btnTakeSecondSpin');
-    btnKeep.disabled = true;
-    btnSecond.disabled = true;
-    btnKeep.querySelector('span').textContent = 'Confirmando...';
-
-    // When connected to Apps Script < v7, re-check latest remote state & quota before committing
+    // Legacy fallback only when connected to Apps Script < v7 (v7 enforces quota atomically on the server)
     if (syncUrl && remoteScriptVersion < 7) {
+      const btnKeep = document.getElementById('btnKeepFirstSpin');
+      const btnSecond = document.getElementById('btnTakeSecondSpin');
+      btnKeep.disabled = true;
+      btnSecond.disabled = true;
+      btnKeep.querySelector('span').textContent = 'Confirmando...';
       await syncFromDrive({ silent: true });
       if (state.assignments[emp.id]) {
         delete state.pendingSpins[emp.id];
@@ -3036,7 +3180,7 @@
     activeDecisionEmpId = null;
     closeModal('modalSpinDecision');
 
-    await commitAssignment(emp, opt, {
+    commitAssignment(emp, opt, {
       forceOverwrite: false,
       isManual: false,
       manualReason: '',
@@ -3046,7 +3190,7 @@
     });
   }
 
-  async function startSecondAndFinalSpin() {
+  function startSecondAndFinalSpin() {
     const empId = activeDecisionEmpId || selectedPersonId;
     const emp = state.employees.find(e => e.id === Number(empId));
     const pending = state.pendingSpins && state.pendingSpins[Number(empId)];
@@ -3056,26 +3200,37 @@
     }
     const firstSpinOption = resolveAssignedOption(pending);
 
+    // Supersede Spin 1 provisional token so any late quotaConflict on Spin 1 won't affect Spin 2
+    provisionalTokenByEmp[emp.id] = `spin2_${Date.now()}`;
+    delete provisionalAbortedEmp[emp.id];
+
     activeDecisionEmpId = null;
     closeModal('modalSpinDecision');
 
-    if (syncUrl) {
-      isSpinning = true;
-      updateSpinButtons();
-      document.getElementById('btnSpinText').textContent = 'Preparando 2.º tiro...';
-      await syncFromDrive({ silent: true });
-      isSpinning = false;
-      updateSpinButtons();
-      if (state.assignments[emp.id]) {
-        delete state.pendingSpins[emp.id];
-        saveState();
-        renderAll();
-        showToast(`🔒 ${emp.name} ya completó su turno en otro dispositivo.`, '🔒');
-        return;
-      }
-    }
-
+    // Start 2nd spin immediately (0ms lag); Drive queue ensures Spin 1 completes before Spin 2 writes
     executeSpin(emp, { spinNumber: 2, firstSpinOption });
+  }
+
+  function renderResultBanner(emp, option, { isManual = false, manualReason = '', spinNumber = 1, savedMsg = '', canUndoManual = false } = {}) {
+    lastShownResultEmpId = emp.id;
+    const banner = document.getElementById('resultBanner');
+    banner.classList.toggle('manual', Boolean(isManual));
+    document.getElementById('btnResultUndo').classList.toggle('hidden', !canUndoManual);
+    document.getElementById('resultSavedNote').textContent = savedMsg;
+    document.getElementById('resultWinnerName').textContent = `${emp.name} · ${emp.area}`;
+    const pill = document.getElementById('resultDatePill');
+    pill.textContent = isManual
+      ? `Manual: ${option.label}`
+      : `Definitivo (Tiro ${spinNumber}/${MAX_SPINS_PER_PERSON}): ${option.label}`;
+    pill.style.background = option.pillBg;
+    pill.style.color = option.pillText;
+    const reasonSuffix = isManual && manualReason ? ` · Motivo: ${manualReason}` : '';
+    document.getElementById('resultDaysText').textContent = `${option.days}${reasonSuffix}`;
+    banner.classList.remove('hidden');
+
+    document.getElementById('liveTicker').innerHTML = isManual
+      ? `<span class="manual-badge">⚠️ Manual (sin ruleta)</span><strong style="color:var(--text);">${xmlEscape(option.label)}</strong>`
+      : `<span class="date-dot" style="background:${option.colorMain};"></span><strong style="color:var(--text);">Definitivo (Tiro ${spinNumber}/${MAX_SPINS_PER_PERSON}): ${xmlEscape(option.label)}</strong>`;
   }
 
   async function commitAssignment(
@@ -3178,38 +3333,40 @@
 
     if (isManual) {
       playManualAlertTone();
+      showToast(`⚠️ Asignación manual a ${emp.name} (NO se tiró la ruleta)`, '⚠️');
     } else if (!confirmProvisional) {
       playWinChime();
       launchConfetti(option.colorMain);
     }
 
-    let finalOption = option;
-    let savedMsg = isManual
-      ? '⚠️ ASIGNACIÓN MANUAL — No se giró la ruleta (guardado en el registro)'
-      : (spinNumber === 2
-          ? `Resultado definitivo del 2.º y último tiro${firstSpinOption ? ' (reemplazó a ' + firstSpinOption.shortLabel + ')' : ''} — Turno bloqueado`
-          : 'Fecha conservada en el 1.er tiro (definitivo) — Turno bloqueado');
+    const localSavedMsg = isManual
+      ? (syncUrl ? '⚠️ Guardando asignación manual en Google Drive...' : '⚠️ ASIGNACIÓN MANUAL — No se giró la ruleta (guardado en el registro)')
+      : (syncUrl
+          ? (spinNumber === 2
+              ? `Definitivo (2.º tiro${firstSpinOption ? ', reemplazó a ' + firstSpinOption.shortLabel : ''}) · Sincronizando con Drive...`
+              : 'Definitivo (1.er tiro conservado) · Sincronizando con Drive...')
+          : (spinNumber === 2
+              ? `Resultado definitivo del 2.º y último tiro${firstSpinOption ? ' (reemplazó a ' + firstSpinOption.shortLabel + ')' : ''} — Turno bloqueado`
+              : 'Fecha conservada en el 1.er tiro (definitivo) — Turno bloqueado'));
 
-    const banner = document.getElementById('resultBanner');
-    banner.classList.toggle('manual', Boolean(isManual));
-    document.getElementById('btnResultUndo').classList.toggle('hidden', !canUndoManual);
+    // Render result banner, progress, table, and "Siguiente persona" IMMEDIATELY (0ms wait!)
+    renderResultBanner(emp, option, { isManual, manualReason, spinNumber, savedMsg: localSavedMsg, canUndoManual });
+    if (state.autoDownload) {
+      downloadXlsx(true);
+    }
+    renderAll();
 
-    if (syncUrl) {
-      document.getElementById('resultSavedNote').textContent = isManual
-        ? '⚠️ Guardando asignación manual (sin ruleta) en Google Drive...'
-        : 'Guardando resultado definitivo en Google Drive...';
-      banner.classList.remove('hidden');
+    if (!syncUrl) return;
 
-      let res;
-      if (!isManual && confirmProvisional && remoteScriptVersion >= 4) {
-        res = await postToDrive({
+    // Persist in Google Drive via FIFO background queue without blocking the next coworker
+    const drivePayload = (!isManual && confirmProvisional && remoteScriptVersion >= 4)
+      ? {
           action: 'confirmSpin',
           empId: emp.id,
           optionId: option.id,
           optionLabel: option.label
-        });
-      } else {
-        res = await postToDrive({
+        }
+      : {
           action: 'recordSpin',
           empId: emp.id,
           optionId: option.id,
@@ -3227,77 +3384,76 @@
           firstSpinOptionId: !isManual && spinNumber === 2 && firstSpinOption ? firstSpinOption.id : '',
           firstSpinLabel: !isManual && spinNumber === 2 && firstSpinOption ? firstSpinOption.label : '',
           firstSpinTimestamp: firstSpinTimestamp || ''
-        });
-      }
+        };
 
-      if (res && res.quotaConflict) {
-        if (!res.state) {
-          if (prevAssignment) state.assignments[emp.id] = prevAssignment;
-          else delete state.assignments[emp.id];
-          if (prevPending && spinNumber === 2) {
-            state.pendingSpins[emp.id] = prevPending;
-          }
-          state.history = state.history.filter(h => !addedHistoryOrders.includes(h.order));
-          saveState();
+    const res = await enqueueDriveWrite(emp.id, () => {
+      if (!isManual && confirmProvisional && provisionalAbortedEmp[emp.id]) {
+        delete provisionalAbortedEmp[emp.id];
+        return Promise.resolve({ ok: false, skippedAbortedProvisional: true });
+      }
+      return postToDriveRaw(drivePayload);
+    });
+
+    if (!res || res.skippedAbortedProvisional) return;
+
+    const bannerStillForEmp = lastShownResultEmpId === emp.id && !document.getElementById('resultBanner').classList.contains('hidden');
+
+    if (res.quotaConflict) {
+      if (!res.state) {
+        if (prevAssignment) state.assignments[emp.id] = prevAssignment;
+        else delete state.assignments[emp.id];
+        if (prevPending && spinNumber === 2) {
+          state.pendingSpins[emp.id] = prevPending;
         }
-        banner.classList.add('hidden');
-        document.getElementById('liveTicker').textContent = 'Cupo actualizado · Gira nuevamente';
-        renderAll();
-        showToast(res.error || '⚠️ Esa fecha acaba de completar su cupo equitativo en otro dispositivo. Gira nuevamente.', '⚠️');
-        return;
-      } else if (res && res.conflict) {
-        const remoteRec = state.assignments[emp.id];
-        finalOption = getOptionById(res.existingOptionId)
-          || (remoteRec && resolveAssignedOption(remoteRec))
-          || (res.existingOptionLabel && state.options.find(o => o.label.toLowerCase() === String(res.existingOptionLabel).toLowerCase()))
-          || option;
-        savedMsg = '🔒 Esta persona ya tenía su turno definitivo en Drive — se conservó su resultado original';
-        showToast(`🔒 ${emp.name} ya completó su turno (${finalOption.shortLabel}).`, '🔒');
-      } else if (res && res.ok) {
-        savedMsg = isManual
-          ? '⚠️ ASIGNACIÓN MANUAL (sin girar la ruleta) — Guardado en Google Drive'
-          : (spinNumber === 2
-              ? `✓ 2.º tiro definitivo guardado en Drive${firstSpinOption ? ' (reemplazó a ' + firstSpinOption.shortLabel + ')' : ''} · Bloqueado`
-              : '✓ 1.er tiro conservado y guardado en Google Drive · Turno bloqueado');
-      } else if (res && res.error && String(res.error).includes('inválida')) {
-        savedMsg = isManual
-          ? '⚠️ ASIGNACIÓN MANUAL (sin ruleta) — Guardado localmente (actualiza Code.gs para sincronizar nuevas fechas)'
-          : 'Guardado localmente (actualiza Code.gs en Drive para sincronizar nuevas fechas)';
-        showToast('Actualiza Code.gs en Apps Script para guardar fechas nuevas en Drive.', 'ℹ');
-      } else {
-        savedMsg = isManual
-          ? '⚠️ ASIGNACIÓN MANUAL (sin ruleta) — Guardado localmente'
-          : 'Guardado localmente (pendiente sincronizar con Drive)';
-        showToast('Sin conexión con Drive. Guardado localmente.', '!');
+        state.history = state.history.filter(h => !addedHistoryOrders.includes(h.order));
+        saveState();
       }
+      if (bannerStillForEmp) {
+        document.getElementById('resultBanner').classList.add('hidden');
+        document.getElementById('liveTicker').textContent = 'Cupo actualizado · Gira nuevamente';
+      }
+      renderAll();
+      showToast(res.error || '⚠️ Esa fecha acaba de completar su cupo equitativo en otro dispositivo. Gira nuevamente.', '⚠️');
+      return;
     }
 
-    if (state.autoDownload) {
-      downloadXlsx(true);
-      savedMsg += ' · Excel descargado';
+    let finalOption = option;
+    let finalSavedMsg = localSavedMsg;
+
+    if (res.conflict) {
+      const remoteRec = state.assignments[emp.id];
+      finalOption = (res.existingOptionLabel && state.options.find(o => o.label.toLowerCase() === String(res.existingOptionLabel).toLowerCase()))
+        || (remoteRec && resolveAssignedOption(remoteRec))
+        || getOptionById(res.existingOptionId)
+        || option;
+      finalSavedMsg = '🔒 Esta persona ya tenía su turno definitivo en Drive — se conservó su resultado original';
+      showToast(`🔒 ${emp.name} ya completó su turno (${finalOption.shortLabel}).`, '🔒');
+    } else if (res.ok) {
+      finalSavedMsg = isManual
+        ? '⚠️ ASIGNACIÓN MANUAL (sin girar la ruleta) — Guardado en Google Drive'
+        : (spinNumber === 2
+            ? `✓ 2.º tiro definitivo guardado en Drive${firstSpinOption ? ' (reemplazó a ' + firstSpinOption.shortLabel + ')' : ''} · Bloqueado`
+            : '✓ 1.er tiro conservado y guardado en Google Drive · Turno bloqueado');
+    } else if (res.error && String(res.error).includes('inválida')) {
+      finalSavedMsg = isManual
+        ? '⚠️ ASIGNACIÓN MANUAL (sin ruleta) — Guardado localmente (actualiza Code.gs para sincronizar nuevas fechas)'
+        : 'Guardado localmente (actualiza Code.gs en Drive para sincronizar nuevas fechas)';
+      showToast('Actualiza Code.gs en Apps Script para guardar fechas nuevas en Drive.', 'ℹ');
+    } else {
+      finalSavedMsg = isManual
+        ? '⚠️ ASIGNACIÓN MANUAL (sin ruleta) — Guardado localmente'
+        : 'Guardado localmente (pendiente sincronizar con Drive)';
+      showToast('Sin conexión con Drive. Guardado localmente.', '!');
     }
 
-    if (isManual) {
-      showToast(`⚠️ Asignación manual a ${emp.name} (NO se tiró la ruleta)`, '⚠️');
+    if (state.autoDownload) finalSavedMsg += ' · Excel descargado';
+
+    if (bannerStillForEmp) {
+      renderResultBanner(emp, finalOption, { isManual, manualReason, spinNumber, savedMsg: finalSavedMsg, canUndoManual });
     }
-
-    document.getElementById('resultSavedNote').textContent = savedMsg;
-    document.getElementById('resultWinnerName').textContent = `${emp.name} · ${emp.area}`;
-    const pill = document.getElementById('resultDatePill');
-    pill.textContent = isManual
-      ? `Manual: ${finalOption.label}`
-      : `Definitivo (Tiro ${spinNumber}/${MAX_SPINS_PER_PERSON}): ${finalOption.label}`;
-    pill.style.background = finalOption.pillBg;
-    pill.style.color = finalOption.pillText;
-    const reasonSuffix = isManual && manualReason ? ` · Motivo: ${manualReason}` : '';
-    document.getElementById('resultDaysText').textContent = `${finalOption.days}${reasonSuffix}`;
-    banner.classList.remove('hidden');
-
-    document.getElementById('liveTicker').innerHTML = isManual
-      ? `<span class="manual-badge">⚠️ Manual (sin ruleta)</span><strong style="color:var(--text);">${xmlEscape(finalOption.label)}</strong>`
-      : `<span class="date-dot" style="background:${finalOption.colorMain};"></span><strong style="color:var(--text);">Definitivo (Tiro ${spinNumber}/${MAX_SPINS_PER_PERSON}): ${xmlEscape(finalOption.label)}</strong>`;
-
-    renderAll();
+    if (pendingDriveWritesCount === 0 || res.conflict) {
+      renderAll();
+    }
   }
 
   function openManualAssignModal(empId = selectedPersonId) {
@@ -4967,8 +5123,14 @@
   });
 
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && syncUrl && !isSpinning) {
+    if (!document.hidden && syncUrl && !isSpinning && pendingDriveWritesCount === 0) {
       syncFromDrive({ silent: true });
+    }
+  });
+  window.addEventListener('beforeunload', (e) => {
+    if (pendingDriveWritesCount > 0) {
+      e.preventDefault();
+      e.returnValue = '';
     }
   });
   window.addEventListener('resize', setupWheelCanvas);
@@ -4985,6 +5147,12 @@
   if (firstPending) selectedPersonId = firstPending.id;
   setupWheelCanvas();
   renderAll();
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(() => {
+      wheelDiscCache.key = '';
+      if (!isSpinning) drawWheel();
+    }).catch(() => {});
+  }
 
   if (syncUrl) {
     syncFromDrive({ silent: true }).then(() => startPolling());
