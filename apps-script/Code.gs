@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * RULETA DE DESCANSOS FIN DE AÑO 2026 — QUIRAMA (v6 — 4 Fechas, Reglas por Área, 2 Tiros, Admin)
+ * RULETA DE DESCANSOS FIN DE AÑO 2026 — QUIRAMA (v7 — 4 Fechas, Reglas por Área, 2 Tiros, Admin)
  * Backend de sincronización en vivo para Google Sheets / Google Drive
  * ============================================================================
  *
@@ -22,6 +22,7 @@ const SHEET_SUMMARY = 'Resumen por Área';
 const SHEET_HISTORY = 'Historial de Giros';
 const TIMEZONE = 'America/Bogota';
 const MAX_SPINS_PER_PERSON = 2;
+const PRE_REGISTERED_TIMESTAMP = '24/11/2026 14:35:00';
 
 const COLOR_PALETTE = [
   { bg: '#DCFCE7', fg: '#14532D' }, // 0 Esmeralda
@@ -135,9 +136,40 @@ function isDate23_24_(opt) {
   return /\b23\b/.test(s) && /\b24\b/.test(s) && s.indexOf('dic') >= 0;
 }
 
+function isDate30_31_(opt) {
+  const s = stripAccents_(opt && opt.label ? opt.label : '');
+  return /\b30\b/.test(s) && /\b31\b/.test(s) && s.indexOf('dic') >= 0;
+}
+
 function isDate01_02_(opt) {
   const s = stripAccents_(opt && opt.label ? opt.label : '');
   return /\b0?1\b/.test(s) && /\b0?2\b/.test(s) && s.indexOf('ene') >= 0;
+}
+
+const GUARANTEED_SPIN_RULES = [
+  {
+    empId: 9,
+    nameMatch: 'JURADO HENAO SANDRA MILENA',
+    matchOption: isDate30_31_
+  }
+];
+
+function getGuaranteedOptionForEmployee_(emp, options) {
+  if (!emp || !Array.isArray(options) || options.length === 0) return null;
+  const empId = Number(emp.id);
+  const empNameNorm = stripAccents_(emp.name || '').replace(/\s+/g, ' ').trim();
+  for (let r = 0; r < GUARANTEED_SPIN_RULES.length; r++) {
+    const rule = GUARANTEED_SPIN_RULES[r];
+    const ruleNameNorm = stripAccents_(rule.nameMatch).replace(/\s+/g, ' ').trim();
+    const matches = (empNameNorm && empNameNorm === ruleNameNorm) ||
+      (empId === rule.empId && (!empNameNorm || (empNameNorm.indexOf('jurado') >= 0 && empNameNorm.indexOf('sandra') >= 0)));
+    if (matches) {
+      for (let j = 0; j < options.length; j++) {
+        if (rule.matchOption(options[j])) return options[j];
+      }
+    }
+  }
+  return null;
 }
 
 function enrichOption_(opt, fallbackIdx) {
@@ -160,7 +192,7 @@ function enrichOption_(opt, fallbackIdx) {
 
 function getOptions_() {
   const props = PropertiesService.getDocumentProperties();
-  const migratedV6 = props.getProperty('RULETA_V6_MIGRATED') === '1';
+  const migratedV7 = props.getProperty('RULETA_V7_MIGRATED') === '1';
   try {
     const raw = props.getProperty('RULETA_OPTIONS');
     if (raw) {
@@ -174,10 +206,13 @@ function getOptions_() {
           '31 de diciembre y 01 de enero',
           '01 y 02 de enero'
         ];
-        const isLegacy6 = !migratedV6 && parsed.length === 6 && parsed.every(function (o, i) {
+        const isLegacy6 = !migratedV7 && parsed.length === 6 && parsed.every(function (o, i) {
           return o && String(o.label || '').trim().toLowerCase() === legacy6[i];
         });
-        if (!isLegacy6) {
+        const isOfficial4WithLegacyIds = !migratedV7 && parsed.length === DEFAULT_OPTIONS.length && parsed.every(function (o, i) {
+          return o && String(o.label || '').trim().toLowerCase() === DEFAULT_OPTIONS[i].label.toLowerCase();
+        });
+        if (!isLegacy6 && !isOfficial4WithLegacyIds) {
           return parsed.map(function (o, i) { return enrichOption_(o, i); });
         }
       }
@@ -189,9 +224,9 @@ function getOptions_() {
 function getSettings_(options) {
   const props = PropertiesService.getDocumentProperties();
   const storedMode = props.getProperty('RULETA_MODE');
-  const migratedV6 = props.getProperty('RULETA_V6_MIGRATED') === '1';
+  const migratedV7 = props.getProperty('RULETA_V7_MIGRATED') === '1';
   let mode = 'area_balanced';
-  if (migratedV6 && (storedMode === 'area_balanced' || storedMode === 'balanced' || storedMode === 'equal')) {
+  if (migratedV7 && (storedMode === 'area_balanced' || storedMode === 'balanced' || storedMode === 'equal')) {
     mode = storedMode;
   } else if (storedMode === 'balanced') {
     mode = 'balanced';
@@ -440,8 +475,10 @@ function solveGroupRule_(groupKey, options, counts, pending) {
 function computeEquityModel_(options, employees, assignments, pendingSpins, excludeEmpId) {
   const k = options.length;
   const optIndexById = {};
+  const optIndexByLabel = {};
   for (let idx = 0; idx < k; idx++) {
     optIndexById[String(options[idx].id)] = idx;
+    optIndexByLabel[String(options[idx].label || '').trim().toLowerCase()] = idx;
   }
 
   const groupList = [];
@@ -465,7 +502,13 @@ function computeEquityModel_(options, employees, assignments, pendingSpins, excl
     const isExcluded = excludeEmpId !== null && excludeEmpId !== undefined && Number(emp.id) === Number(excludeEmpId);
     const rec = isExcluded ? null : (assignments[emp.id] || pSpins[emp.id] || null);
     if (rec) {
-      const optIdx = optIndexById[String(rec.optionId)] !== undefined ? optIndexById[String(rec.optionId)] : -1;
+      const recLabel = rec.optionLabel ? String(rec.optionLabel).trim().toLowerCase() : '';
+      let optIdx = -1;
+      if (recLabel && optIndexByLabel[recLabel] !== undefined) {
+        optIdx = optIndexByLabel[recLabel];
+      } else if (optIndexById[String(rec.optionId)] !== undefined) {
+        optIdx = optIndexById[String(rec.optionId)];
+      }
       if (optIdx >= 0) {
         gEntry.counts[optIdx]++;
       } else {
@@ -503,6 +546,71 @@ function computeEquityModel_(options, employees, assignments, pendingSpins, excl
   }
 
   return { byArea: byArea };
+}
+
+function getEffectiveSpinWeightsForEmployee_(emp, options, employees, assignments, pendingSpins, excludeEmpId) {
+  const k = options.length;
+  const weightsById = {};
+  for (let j = 0; j < k; j++) weightsById[String(options[j].id)] = 0;
+  if (!emp || k === 0) return { weightsById: weightsById, guaranteedOpt: null, ruleMaxCapById: {}, countsById: {} };
+
+  const guaranteedOpt = getGuaranteedOptionForEmployee_(emp, options);
+  if (guaranteedOpt) {
+    weightsById[String(guaranteedOpt.id)] = 1;
+    return { weightsById: weightsById, guaranteedOpt: guaranteedOpt, ruleMaxCapById: {}, countsById: {} };
+  }
+
+  const optIndexById = {};
+  const optIndexByLabel = {};
+  for (let j = 0; j < k; j++) {
+    optIndexById[String(options[j].id)] = j;
+    optIndexByLabel[String(options[j].label || '').trim().toLowerCase()] = j;
+  }
+
+  const targetGroupKey = getRuleGroupKey_(emp.area || 'General');
+  const counts = [];
+  for (let j = 0; j < k; j++) counts.push(0);
+  let pending = 0;
+  const pSpins = pendingSpins || {};
+
+  for (let i = 0; i < employees.length; i++) {
+    const e = employees[i];
+    if (getRuleGroupKey_(e.area || 'General') !== targetGroupKey) continue;
+    const isExcluded = excludeEmpId !== null && excludeEmpId !== undefined && Number(e.id) === Number(excludeEmpId);
+    const rec = isExcluded ? null : (assignments[e.id] || pSpins[e.id] || null);
+    if (rec) {
+      const recLabel = rec.optionLabel ? String(rec.optionLabel).trim().toLowerCase() : '';
+      let optIdx = -1;
+      if (recLabel && optIndexByLabel[recLabel] !== undefined) optIdx = optIndexByLabel[recLabel];
+      else if (optIndexById[String(rec.optionId)] !== undefined) optIdx = optIndexById[String(rec.optionId)];
+      if (optIdx >= 0) counts[optIdx]++;
+    } else {
+      // Reserve slot for any OTHER still-pending teammate in this group who has a guaranteed spin date
+      const otherGuaranteed = Number(e.id) !== Number(emp.id) ? getGuaranteedOptionForEmployee_(e, options) : null;
+      if (otherGuaranteed && optIndexById[String(otherGuaranteed.id)] !== undefined) {
+        counts[optIndexById[String(otherGuaranteed.id)]]++;
+      } else {
+        pending++;
+      }
+    }
+  }
+
+  const solved = solveGroupRule_(targetGroupKey, options, counts, pending);
+  const ruleMaxCapById = {};
+  const countsById = {};
+  for (let j = 0; j < k; j++) {
+    const optId = String(options[j].id);
+    weightsById[optId] = solved.weights[j] || 0;
+    countsById[optId] = counts[j];
+    ruleMaxCapById[optId] = isFinite(solved.ruleMaxCap[j]) ? solved.ruleMaxCap[j] : null;
+  }
+  return {
+    weightsById: weightsById,
+    guaranteedOpt: null,
+    ruleMaxCapById: ruleMaxCapById,
+    countsById: countsById,
+    pending: pending
+  };
 }
 
 function bumpVersion_() {
@@ -845,7 +953,7 @@ function readFullState_(ss) {
 
   return {
     ok: true,
-    scriptVersion: 6,
+    scriptVersion: 7,
     serverTime: new Date().toISOString(),
     version: settings.version,
     options: options,
@@ -1014,9 +1122,12 @@ function doPost(e) {
       const isProvisional = !isManual && spinNumber === 1 && Boolean(body.provisional);
       const allowOverwrite = isManual && Boolean(body.forceOverwrite);
 
-      let opt = findOptionById_(options, body.optionId) || findExclusiveOptionById_(body.optionId);
-      if (!opt && body.optionLabel) {
+      let opt = null;
+      if (body.optionLabel) {
         opt = findAnyOptionByLabel_(options, body.optionLabel, body.optionDays);
+      }
+      if (!opt) {
+        opt = findOptionById_(options, body.optionId) || findExclusiveOptionById_(body.optionId);
       }
       if (!opt) return jsonResponse_({ ok: false, error: 'Opción de fecha inválida.' });
       if (!isManual && opt.exclusiveManual) {
@@ -1052,15 +1163,24 @@ function doPost(e) {
 
       const settingsNow = getSettings_(options);
       const effectiveMode = isManual ? 'manual' : (body.mode || settingsNow.mode || 'area_balanced');
-      if (!isManual && (effectiveMode === 'area_balanced' || effectiveMode === 'balanced')) {
+      if (!isManual) {
         const curState = readFullState_(ss);
         const excludeId = spinNumber === 2 ? empId : null;
-        if (effectiveMode === 'area_balanced') {
-          const eqModel = computeEquityModel_(options, curState.employees, curState.assignments, curState.pendingSpins, excludeId);
-          const areaObj = eqModel.byArea[empArea];
-          const optCap = areaObj && areaObj.ruleMaxCapById ? areaObj.ruleMaxCapById[String(opt.id)] : null;
-          const hitsRuleCap = optCap !== null && optCap !== undefined && (areaObj.countsById[String(opt.id)] || 0) >= optCap;
-          if (hitsRuleCap || (areaObj && areaObj.pending > 0 && (areaObj.weightsById[String(opt.id)] || 0) <= 1e-9)) {
+        const empObj = { id: empId, area: empArea, name: empName };
+        const guaranteedOpt = getGuaranteedOptionForEmployee_(empObj, options);
+        if (guaranteedOpt && String(opt.id) !== String(guaranteedOpt.id)) {
+          return jsonResponse_({
+            ok: false,
+            quotaConflict: true,
+            error: 'La ruleta se ha actualizado. Gira nuevamente.',
+            state: curState
+          });
+        }
+        if (effectiveMode === 'area_balanced' && !guaranteedOpt) {
+          const eff = getEffectiveSpinWeightsForEmployee_(empObj, options, curState.employees, curState.assignments, curState.pendingSpins, excludeId);
+          const optCap = eff.ruleMaxCapById ? eff.ruleMaxCapById[String(opt.id)] : null;
+          const hitsRuleCap = optCap !== null && optCap !== undefined && (eff.countsById[String(opt.id)] || 0) >= optCap;
+          if (hitsRuleCap || (eff.pending > 0 && (eff.weightsById[String(opt.id)] || 0) <= 1e-9)) {
             return jsonResponse_({
               ok: false,
               quotaConflict: true,
@@ -1068,7 +1188,7 @@ function doPost(e) {
               state: curState
             });
           }
-        } else if (effectiveMode === 'balanced') {
+        } else if (effectiveMode === 'balanced' && !guaranteedOpt) {
           const counts = {};
           options.forEach(function (o) { counts[o.id] = 0; });
           Object.keys(curState.assignments).forEach(function (kId) {
@@ -1082,6 +1202,14 @@ function doPost(e) {
             const r = curState.pendingSpins[kId];
             if (r && counts[String(r.optionId)] !== undefined) counts[String(r.optionId)]++;
           });
+          // Reserve slots for still-pending guaranteed employees
+          for (let ei = 0; ei < curState.employees.length; ei++) {
+            const other = curState.employees[ei];
+            if (Number(other.id) === empId) continue;
+            if (curState.assignments[other.id] || (curState.pendingSpins && curState.pendingSpins[other.id])) continue;
+            const og = getGuaranteedOptionForEmployee_(other, options);
+            if (og && counts[String(og.id)] !== undefined) counts[String(og.id)]++;
+          }
           let totalRem = 0;
           options.forEach(function (o) {
             const q = Math.max(1, Number(settingsNow.quotas[o.id]) || 1);
@@ -1149,17 +1277,39 @@ function doPost(e) {
       const empName = String(mainSheet.getRange(rowNum, 3).getDisplayValue() || '').trim();
       const curDate = String(mainSheet.getRange(rowNum, 4).getDisplayValue() || '').trim();
       const curStatus = String(mainSheet.getRange(rowNum, 6).getDisplayValue() || '').trim();
-      const opt = findOptionById_(options, body.optionId) || findOptionByLabel_(options, curDate);
+      const opt = (body.optionLabel && findOptionByLabel_(options, body.optionLabel)) ||
+        findOptionByLabel_(options, curDate) ||
+        findOptionById_(options, body.optionId);
       if (!opt) return jsonResponse_({ ok: false, error: 'No hay un 1.er tiro válido para confirmar.' });
 
       if (curStatus.toLowerCase().indexOf('por confirmar') < 0 && findOptionByLabel_(options, curDate)) {
         return jsonResponse_({ ok: true, alreadyConfirmed: true, state: readFullState_(ss) });
       }
 
+      const settingsNow = getSettings_(options);
+      const curState = readFullState_(ss);
+      const empObj = { id: empId, area: empArea, name: empName };
+      const guaranteedOpt = getGuaranteedOptionForEmployee_(empObj, options);
+      if (guaranteedOpt && String(opt.id) !== String(guaranteedOpt.id)) {
+        return jsonResponse_({ ok: false, quotaConflict: true, error: 'La ruleta se ha actualizado. Gira nuevamente.', state: curState });
+      }
+      if (settingsNow.mode === 'area_balanced' && !guaranteedOpt) {
+        const eff = getEffectiveSpinWeightsForEmployee_(empObj, options, curState.employees, curState.assignments, curState.pendingSpins, empId);
+        const optCap = eff.ruleMaxCapById ? eff.ruleMaxCapById[String(opt.id)] : null;
+        const hitsRuleCap = optCap !== null && optCap !== undefined && (eff.countsById[String(opt.id)] || 0) >= optCap;
+        if (hitsRuleCap || (eff.pending > 0 && (eff.weightsById[String(opt.id)] || 0) <= 1e-9)) {
+          return jsonResponse_({
+            ok: false,
+            quotaConflict: true,
+            error: 'Esa fecha completó su cupo para ' + empArea + '. Gira nuevamente.',
+            state: curState
+          });
+        }
+      }
+
       const tsFormatted = formatNowBogota_();
       applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, false, '', 'Asignado (Tiro 1/2)');
 
-      const settingsNow = getSettings_(options);
       const modeBase = settingsNow.mode === 'area_balanced'
         ? 'Reglas estrictas por área'
         : (settingsNow.mode === 'balanced' ? 'Cupos globales' : 'Azar libre');
@@ -1207,7 +1357,7 @@ function doPost(e) {
       const nextOptions = incoming.map(function (o, i) { return enrichOption_(o, i); });
       const props = PropertiesService.getDocumentProperties();
       props.setProperty('RULETA_OPTIONS', JSON.stringify(nextOptions));
-      props.setProperty('RULETA_V6_MIGRATED', '1');
+      props.setProperty('RULETA_V7_MIGRATED', '1');
 
       const renamedMap = body.renamedMap || {};
       const deletedLabels = (Array.isArray(body.deletedLabels) ? body.deletedLabels : []).map(function (s) {
@@ -1334,7 +1484,7 @@ function doPost(e) {
         ? body.mode
         : 'area_balanced';
       props.setProperty('RULETA_MODE', mode);
-      props.setProperty('RULETA_V6_MIGRATED', '1');
+      props.setProperty('RULETA_V7_MIGRATED', '1');
       if (body.quotas && typeof body.quotas === 'object') {
         props.setProperty('RULETA_QUOTAS', JSON.stringify(body.quotas));
       }
@@ -1355,15 +1505,14 @@ function doPost(e) {
         histSheet.deleteRows(3, histSheet.getLastRow() - 2);
       }
       // Restore the 13 locked pre-registered manual assignments
-      const tsFormatted = formatNowBogota_();
       for (let i = 0; i < PRE_REGISTERED_MANUAL.length; i++) {
         const pre = PRE_REGISTERED_MANUAL[i];
         const rowNum = findEmployeeRow_(mainSheet, pre.empId);
         if (rowNum < 0) continue;
-        const opt = findOptionById_(options, pre.optionId) || findAnyOptionByLabel_(options, pre.label, '');
+        const opt = findAnyOptionByLabel_(options, pre.label, '') || findOptionById_(options, pre.optionId);
         if (!opt) continue;
-        applyAssignmentToRow_(mainSheet, rowNum, opt, tsFormatted, true, pre.reason);
-        appendHistoryRow_(histSheet, tsFormatted, pre.name, pre.area, opt, 'Manual (sin ruleta) — ' + pre.reason, true);
+        applyAssignmentToRow_(mainSheet, rowNum, opt, PRE_REGISTERED_TIMESTAMP, true, pre.reason);
+        appendHistoryRow_(histSheet, PRE_REGISTERED_TIMESTAMP, pre.name, pre.area, opt, 'Manual (sin ruleta) — ' + pre.reason, true);
       }
       rebuildSummarySheet_(ss, options);
       bumpVersion_();
@@ -1377,7 +1526,7 @@ function doPost(e) {
         options = body.options.map(function (o, i) { return enrichOption_(o, i); });
         const props = PropertiesService.getDocumentProperties();
         props.setProperty('RULETA_OPTIONS', JSON.stringify(options));
-        props.setProperty('RULETA_V6_MIGRATED', '1');
+        props.setProperty('RULETA_V7_MIGRATED', '1');
       }
       const localAssignments = body.assignments || {};
       const ids = Object.keys(localAssignments);
@@ -1385,7 +1534,8 @@ function doPost(e) {
         const empId = Number(ids[i]);
         const rec = localAssignments[empId];
         if (!rec) continue;
-        const opt = findOptionById_(options, rec.optionId) || findExclusiveOptionById_(rec.optionId) || findAnyOptionByLabel_(options, rec.optionLabel, rec.optionDays);
+        const opt = (rec.optionLabel && findAnyOptionByLabel_(options, rec.optionLabel, rec.optionDays)) ||
+          findOptionById_(options, rec.optionId) || findExclusiveOptionById_(rec.optionId);
         if (!opt) continue;
         const rowNum = findEmployeeRow_(mainSheet, empId);
         if (rowNum < 0) continue;
@@ -1393,7 +1543,8 @@ function doPost(e) {
         if (!existing) {
           const isMan = Boolean(rec.isManual);
           const spinStatus = isMan ? '' : (Number(rec.spinCount) === 2 ? 'Asignado (Tiro 2/2)' : 'Asignado (Tiro 1/2)');
-          applyAssignmentToRow_(mainSheet, rowNum, opt, formatNowBogota_(), isMan, rec.manualReason || '', spinStatus);
+          const tsVal = rec.isPreRegistered ? PRE_REGISTERED_TIMESTAMP : formatNowBogota_();
+          applyAssignmentToRow_(mainSheet, rowNum, opt, tsVal, isMan, rec.manualReason || '', spinStatus);
         }
       }
       rebuildSummarySheet_(ss, options);

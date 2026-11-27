@@ -28,7 +28,7 @@ Por defecto opera en modo **Reglas estrictas por área y fecha** usando aleatori
 
 ## Actualizar o activar sincronización en vivo con Google Drive
 
-La hoja `Descansos Quirama Fin de Año 2026` cuenta con 3 pestañas (`Descansos Quirama`, `Resumen por Área` con fórmulas e `Historial de Giros`). Para activar la versión v6 (4 fechas, nuevas reglas exactas por área, 13 pre-registrados protegidos, 2 tiros con bloqueo atómico y anulación de tiros desde administración):
+La hoja `Descansos Quirama Fin de Año 2026` cuenta con 3 pestañas (`Descansos Quirama`, `Resumen por Área` con fórmulas e `Historial de Giros`). Para activar la versión v7 (4 fechas, reglas exactas por área, 13 pre-registrados protegidos, 2 tiros con bloqueo atómico y anulación de tiros desde administración):
 
 1. Abre la hoja en Google Drive: [Descansos Quirama Fin de Año 2026](https://docs.google.com/spreadsheets/d/1oMbzcsW7UjO4vrRzRPwsgYIQwRn5OXRF3w0N-mR-vKc/edit).
 2. Ve al menú **Extensiones → Apps Script**.

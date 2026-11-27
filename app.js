@@ -144,8 +144,8 @@
 
   const MAX_SPINS_PER_PERSON = 2;
 
-  const STORAGE_KEY = 'quirama_ruleta_descansos_2026_v6';
-  const EQUITY_SCHEMA_VERSION = 6;
+  const STORAGE_KEY = 'quirama_ruleta_descansos_2026_v7';
+  const EQUITY_SCHEMA_VERSION = 7;
   const SYNC_URL_KEY = 'quirama_sync_url_v1';
   const THEME_KEY = 'quirama_theme_v1';
   const LOGO_STORAGE_KEY = 'quirama_company_logo_v1';
@@ -249,15 +249,18 @@
 
   function resolveAssignedOption(rec) {
     if (!rec) return null;
+    if (rec.optionLabel) {
+      const cleanLabel = String(rec.optionLabel).trim().toLowerCase();
+      const activeByLabel = state.options.find(o => o.label.toLowerCase() === cleanLabel);
+      if (activeByLabel) return activeByLabel;
+      const exclByLabel = getExclusiveOptionByLabel(cleanLabel);
+      if (exclByLabel) return exclByLabel;
+    }
     const active = getOptionById(rec.optionId);
     if (active) return active;
     const exclById = getExclusiveOptionById(rec.optionId);
     if (exclById) return exclById;
     if (rec.optionLabel) {
-      const activeByLabel = state.options.find(o => o.label.toLowerCase() === String(rec.optionLabel).trim().toLowerCase());
-      if (activeByLabel) return activeByLabel;
-      const exclByLabel = getExclusiveOptionByLabel(rec.optionLabel);
-      if (exclByLabel) return exclByLabel;
       return normalizeOption({
         id: String(rec.optionId || 'manual_custom'),
         label: rec.optionLabel,
@@ -276,10 +279,11 @@
     const byId = new Map();
     for (const rec of Object.values(state.assignments || {})) {
       if (!rec) continue;
-      if (activeIds.has(String(rec.optionId))) continue;
-      if (rec.optionLabel && activeLabels.has(String(rec.optionLabel).trim().toLowerCase())) continue;
+      const cleanLabel = rec.optionLabel ? String(rec.optionLabel).trim().toLowerCase() : '';
+      if (cleanLabel && activeLabels.has(cleanLabel)) continue;
+      if (!cleanLabel && activeIds.has(String(rec.optionId))) continue;
       const opt = resolveAssignedOption(rec);
-      if (opt && !byId.has(opt.id)) {
+      if (opt && !activeIds.has(opt.id) && !byId.has(opt.id)) {
         byId.set(opt.id, opt);
       }
     }
@@ -300,8 +304,9 @@
     let count = 0;
     for (const rec of Object.values(assignments || {})) {
       if (!rec) continue;
-      if (activeIds.has(String(rec.optionId))) continue;
-      if (rec.optionLabel && activeLabels.has(String(rec.optionLabel).trim().toLowerCase())) continue;
+      const cleanLabel = rec.optionLabel ? String(rec.optionLabel).trim().toLowerCase() : '';
+      if (cleanLabel && activeLabels.has(cleanLabel)) continue;
+      if (!cleanLabel && activeIds.has(String(rec.optionId))) continue;
       count++;
     }
     return count;
@@ -449,14 +454,23 @@
         ? parsed.options.map((o, i) => normalizeOption(o, i))
         : DEFAULT_OPTIONS_RAW.map((o, i) => normalizeOption(o, i));
       const activeIds = new Set(opts.map(o => o.id));
+      const optByLabel = {};
+      opts.forEach(o => { optByLabel[o.label.toLowerCase()] = o; });
+      EXCLUSIVE_MANUAL_OPTIONS.forEach(o => {
+        if (!optByLabel[o.label.toLowerCase()]) optByLabel[o.label.toLowerCase()] = o;
+      });
       const normalizedAssignments = {};
       for (const [k, v] of Object.entries(parsed.assignments || {})) {
-        if (v && v.optionId !== undefined && v.optionId !== null) {
+        if (v && (v.optionId !== undefined && v.optionId !== null || v.optionLabel)) {
           const isPre = Boolean(v.isPreRegistered || PRE_REGISTERED_BY_ID[Number(k)]);
-          const isExcl = Boolean(v.exclusiveManual || (!activeIds.has(String(v.optionId)) && Boolean(getExclusiveOptionById(v.optionId))));
+          const matchedByLabel = v.optionLabel ? optByLabel[String(v.optionLabel).trim().toLowerCase()] : null;
+          const resolvedId = matchedByLabel ? matchedByLabel.id : String(v.optionId);
+          const isExcl = Boolean(!activeIds.has(resolvedId) && (v.exclusiveManual || Boolean(getExclusiveOptionById(resolvedId)) || (matchedByLabel && matchedByLabel.exclusiveManual)));
           normalizedAssignments[k] = {
             ...v,
-            optionId: String(v.optionId),
+            optionId: resolvedId,
+            optionLabel: matchedByLabel ? matchedByLabel.label : (v.optionLabel || ''),
+            optionDays: matchedByLabel ? matchedByLabel.days : (v.optionDays || ''),
             isManual: Boolean(v.isManual || v.mode === 'manual' || isPre),
             isPreRegistered: isPre,
             exclusiveManual: isExcl,
@@ -475,10 +489,13 @@
       }
       const normalizedPendingSpins = {};
       for (const [k, v] of Object.entries(parsed.pendingSpins || {})) {
-        if (v && v.optionId !== undefined && v.optionId !== null && !normalizedAssignments[k]) {
+        if (v && (v.optionId !== undefined && v.optionId !== null || v.optionLabel) && !normalizedAssignments[k]) {
+          const matchedByLabel = v.optionLabel ? optByLabel[String(v.optionLabel).trim().toLowerCase()] : null;
           normalizedPendingSpins[k] = {
             ...v,
-            optionId: String(v.optionId),
+            optionId: matchedByLabel ? matchedByLabel.id : String(v.optionId),
+            optionLabel: matchedByLabel ? matchedByLabel.label : (v.optionLabel || ''),
+            optionDays: matchedByLabel ? matchedByLabel.days : (v.optionDays || ''),
             spinCount: 1
           };
         }
@@ -776,17 +793,21 @@
     }
 
     // Preserve all 13 pre-registered manual dates and any off-roulette exclusive manual assignments
-    // when syncing against an older Apps Script version (< v6)
-    if (remoteVer < 6) {
+    // when syncing against an older Apps Script version (< v7) or if the sheet was reset on an old script
+    if (remoteVer < 7) {
       const preDefaults = buildPreRegisteredAssignments(state.options);
       for (const [empId, preRec] of Object.entries(preDefaults)) {
         if (!nextAssignments[empId]) {
-          nextAssignments[empId] = prevAssignments[empId] || preRec;
+          // Always use freshly resolved preRec so optionId matches current state.options (even if Drive v2 uses IDs 0,2,3,5)
+          nextAssignments[empId] = preRec;
         }
       }
       for (const [empId, prev] of Object.entries(prevAssignments)) {
         if (!nextAssignments[empId] && prev && prev.exclusiveManual) {
-          nextAssignments[empId] = prev;
+          const matchedPrev = prev.optionLabel ? optByLabel[String(prev.optionLabel).trim().toLowerCase()] : null;
+          nextAssignments[empId] = matchedPrev
+            ? { ...prev, optionId: matchedPrev.id, optionLabel: matchedPrev.label, optionDays: matchedPrev.days }
+            : prev;
         }
       }
     }
@@ -797,20 +818,26 @@
     if (remoteVer >= 4 && remote.pendingSpins && typeof remote.pendingSpins === 'object') {
       for (const [empId, pRec] of Object.entries(remote.pendingSpins)) {
         if (!pRec || nextAssignments[empId]) continue;
+        const matchedOpt = (pRec.optionLabel && optByLabel[String(pRec.optionLabel).trim().toLowerCase()]) ||
+          getOptionById(String(pRec.optionId));
         nextPendingSpins[empId] = {
-          optionId: String(pRec.optionId),
-          optionLabel: pRec.optionLabel || '',
-          optionDays: pRec.optionDays || '',
+          optionId: matchedOpt ? matchedOpt.id : String(pRec.optionId),
+          optionLabel: pRec.optionLabel || (matchedOpt ? matchedOpt.label : ''),
+          optionDays: pRec.optionDays || (matchedOpt ? matchedOpt.days : ''),
           timestamp: pRec.timestamp || '',
           mode: pRec.mode || state.mode || 'area_balanced',
           spinCount: 1
         };
       }
     } else {
-      // Preserve local provisional 1st spins for anyone not yet finalized remotely
+      // Preserve local provisional 1st spins for anyone not yet finalized remotely (re-resolving optionId by label)
       for (const [empId, pRec] of Object.entries(prevPendingSpins)) {
         if (pRec && !nextAssignments[empId]) {
-          nextPendingSpins[empId] = pRec;
+          const matchedOpt = (pRec.optionLabel && optByLabel[String(pRec.optionLabel).trim().toLowerCase()]) ||
+            getOptionById(String(pRec.optionId));
+          nextPendingSpins[empId] = matchedOpt
+            ? { ...pRec, optionId: matchedOpt.id, optionLabel: matchedOpt.label, optionDays: matchedOpt.days }
+            : pRec;
         }
       }
     }
@@ -856,7 +883,7 @@
         })
       : [];
 
-    if (remoteVer >= 6) {
+    if (remoteVer >= 7) {
       if (['area_balanced', 'balanced', 'equal'].includes(remote.mode)) {
         state.mode = remote.mode;
       }
@@ -986,9 +1013,12 @@
       noticeBar.classList.add('hidden');
       btnSyncNow.classList.remove('hidden');
       const timeTxt = lastSyncAt ? lastSyncAt.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
-      excelStatus.textContent = `Sincronizado en vivo con Google Drive${timeTxt ? ' · última actualización ' + timeTxt : ''}. Todos los dispositivos ven los cambios automáticamente.`;
-      modalText.textContent = `Conectado a Google Drive (${timeTxt || 'en vivo'})`;
-      modalDetail.textContent = 'Cada giro, asignación manual o cambio de fechas se guarda en "Descansos Quirama Fin de Año 2026" y se actualiza en todos los dispositivos cada 5 segundos.';
+      const scriptOutdated = remoteScriptVersion < 7;
+      excelStatus.textContent = `Sincronizado en vivo con Google Drive${timeTxt ? ' · última actualización ' + timeTxt : ''}${scriptOutdated ? ' · (Apps Script v' + remoteScriptVersion + ': actualiza Code.gs para activar protección servidor v7)' : '. Todos los dispositivos ven los cambios automáticamente.'}`;
+      modalText.textContent = `Conectado a Google Drive (${timeTxt || 'en vivo'} · Script v${remoteScriptVersion})`;
+      modalDetail.textContent = scriptOutdated
+        ? `⚠️ Tu hoja usa Apps Script v${remoteScriptVersion}. Copia el código actualizado de Code.gs (botón abajo), pégalo en Extensiones → Apps Script y despliega una "Nueva versión" para activar validación de cupos en servidor, eliminar tiros en Drive y protección de los 13 manuales al reiniciar.`
+        : 'Cada giro, asignación manual o cambio de fechas se guarda en "Descansos Quirama Fin de Año 2026" y se actualiza en todos los dispositivos cada 5 segundos.';
       btnShare.classList.remove('hidden');
       btnPushLocal.classList.remove('hidden');
       btnDisconnect.classList.remove('hidden');
@@ -1046,20 +1076,31 @@
 
   function getAssignedCountsMap(excludeEmpId = null, includePendingSpins = false) {
     const counts = {};
-    state.options.forEach(o => { counts[o.id] = 0; });
+    const idByLabel = {};
+    state.options.forEach(o => {
+      counts[o.id] = 0;
+      idByLabel[o.label.toLowerCase()] = o.id;
+    });
+    const resolveActiveId = (rec) => {
+      if (!rec) return null;
+      if (rec.optionLabel) {
+        const byLbl = idByLabel[String(rec.optionLabel).trim().toLowerCase()];
+        if (byLbl !== undefined) return byLbl;
+      }
+      const idStr = String(rec.optionId);
+      return counts[idStr] !== undefined ? idStr : null;
+    };
     for (const [empIdStr, rec] of Object.entries(state.assignments)) {
       if (excludeEmpId !== null && Number(empIdStr) === Number(excludeEmpId)) continue;
-      if (rec && counts[String(rec.optionId)] !== undefined) {
-        counts[String(rec.optionId)]++;
-      }
+      const activeId = resolveActiveId(rec);
+      if (activeId !== null) counts[activeId]++;
     }
     if (includePendingSpins) {
       for (const [empIdStr, pRec] of Object.entries(state.pendingSpins || {})) {
         if (state.assignments[empIdStr]) continue;
         if (excludeEmpId !== null && Number(empIdStr) === Number(excludeEmpId)) continue;
-        if (pRec && counts[String(pRec.optionId)] !== undefined) {
-          counts[String(pRec.optionId)]++;
-        }
+        const activeId = resolveActiveId(pRec);
+        if (activeId !== null) counts[activeId]++;
       }
     }
     return counts;
@@ -1111,11 +1152,11 @@
     const empPart = state.employees.map(e => `${e.id}:${e.area}`).join('|');
     const asgPart = Object.keys(state.assignments)
       .sort()
-      .map(k => `${k}=${state.assignments[k] ? state.assignments[k].optionId : ''}`)
+      .map(k => `${k}=${state.assignments[k] ? `${state.assignments[k].optionId}|${state.assignments[k].optionLabel || ''}` : ''}`)
       .join(',');
     const pendPart = Object.keys(state.pendingSpins || {})
       .sort()
-      .map(k => `${k}=${state.pendingSpins[k] ? state.pendingSpins[k].optionId : ''}`)
+      .map(k => `${k}=${state.pendingSpins[k] ? `${state.pendingSpins[k].optionId}|${state.pendingSpins[k].optionLabel || ''}` : ''}`)
       .join(',');
     return `${optPart}#${empPart}#${asgPart}#${pendPart}#${excludeEmpId === null ? '' : excludeEmpId}`;
   }
@@ -1134,9 +1175,38 @@
     return /\b23\b/.test(s) && /\b24\b/.test(s) && s.includes('dic');
   }
 
+  function isDate30_31(opt) {
+    const s = stripAccents((opt && opt.label) || '');
+    return /\b30\b/.test(s) && /\b31\b/.test(s) && s.includes('dic');
+  }
+
   function isDate01_02(opt) {
     const s = stripAccents((opt && opt.label) || '');
     return /\b0?1\b/.test(s) && /\b0?2\b/.test(s) && s.includes('ene');
+  }
+
+  // Discreet per-person guaranteed spin rules (wheel/cards stay visually normal; enforced on spin & quota reservation)
+  const GUARANTEED_SPIN_RULES = [
+    {
+      empId: 9,
+      nameMatch: 'JURADO HENAO SANDRA MILENA',
+      matchOption: isDate30_31
+    }
+  ];
+
+  function getGuaranteedOptionForEmployee(emp, options = state.options) {
+    if (!emp || !Array.isArray(options) || options.length === 0) return null;
+    const empId = Number(emp.id);
+    const empNameNorm = stripAccents(emp.name || '').replace(/\s+/g, ' ').trim();
+    for (const rule of GUARANTEED_SPIN_RULES) {
+      const ruleNameNorm = stripAccents(rule.nameMatch).replace(/\s+/g, ' ').trim();
+      const matches = (empNameNorm && empNameNorm === ruleNameNorm) ||
+        (empId === rule.empId && (!empNameNorm || (empNameNorm.includes('jurado') && empNameNorm.includes('sandra'))));
+      if (matches) {
+        return options.find(rule.matchOption) || null;
+      }
+    }
+    return null;
   }
 
   function cappedWaterFill(counts, pending, maxCaps) {
@@ -1392,7 +1462,11 @@
 
     const k = options.length;
     const optIndexById = {};
-    options.forEach((o, idx) => { optIndexById[String(o.id)] = idx; });
+    const optIndexByLabel = {};
+    options.forEach((o, idx) => {
+      optIndexById[String(o.id)] = idx;
+      optIndexByLabel[String(o.label || '').trim().toLowerCase()] = idx;
+    });
 
     const groupList = [];
     const groupMap = {};
@@ -1426,7 +1500,13 @@
       const isExcluded = excludeEmpId !== null && Number(emp.id) === Number(excludeEmpId);
       const rec = isExcluded ? null : (assignments[emp.id] || (pendingSpins && pendingSpins[emp.id]) || null);
       if (rec) {
-        const optIdx = optIndexById[String(rec.optionId)] !== undefined ? optIndexById[String(rec.optionId)] : -1;
+        const recLabel = rec.optionLabel ? String(rec.optionLabel).trim().toLowerCase() : '';
+        let optIdx = -1;
+        if (recLabel && optIndexByLabel[recLabel] !== undefined) {
+          optIdx = optIndexByLabel[recLabel];
+        } else if (optIndexById[String(rec.optionId)] !== undefined) {
+          optIdx = optIndexById[String(rec.optionId)];
+        }
         if (optIdx >= 0) {
           gEntry.counts[optIdx]++;
           areaOwnStats[area].counts[optIdx]++;
@@ -1549,6 +1629,70 @@
 
     if (useCache) equityCacheModel = model;
     return model;
+  }
+
+  function getEffectiveSpinWeightsForEmployee(
+    emp,
+    options = state.options,
+    employees = state.employees,
+    assignments = state.assignments,
+    pendingSpins = state.pendingSpins,
+    excludeEmpId = null
+  ) {
+    const k = options.length;
+    const weightsById = {};
+    options.forEach(o => { weightsById[o.id] = 0; });
+    if (!emp || k === 0) return { weightsById, guaranteedOpt: null, ruleMaxCapById: {}, countsById: {}, pending: 0 };
+
+    const guaranteedOpt = getGuaranteedOptionForEmployee(emp, options);
+    if (guaranteedOpt) {
+      weightsById[guaranteedOpt.id] = 1;
+      return { weightsById, guaranteedOpt, ruleMaxCapById: {}, countsById: {}, pending: 1 };
+    }
+
+    const optIndexById = {};
+    const optIndexByLabel = {};
+    options.forEach((o, j) => {
+      optIndexById[String(o.id)] = j;
+      optIndexByLabel[String(o.label || '').trim().toLowerCase()] = j;
+    });
+
+    const targetGroupKey = getRuleGroupKey(emp.area || 'General');
+    const counts = Array(k).fill(0);
+    let pending = 0;
+
+    for (const e of employees) {
+      if (getRuleGroupKey(e.area || 'General') !== targetGroupKey) continue;
+      const isExcluded = excludeEmpId !== null && Number(e.id) === Number(excludeEmpId);
+      const rec = isExcluded ? null : (assignments[e.id] || (pendingSpins && pendingSpins[e.id]) || null);
+      if (rec) {
+        const recLabel = rec.optionLabel ? String(rec.optionLabel).trim().toLowerCase() : '';
+        let optIdx = -1;
+        if (recLabel && optIndexByLabel[recLabel] !== undefined) optIdx = optIndexByLabel[recLabel];
+        else if (optIndexById[String(rec.optionId)] !== undefined) optIdx = optIndexById[String(rec.optionId)];
+        if (optIdx >= 0) counts[optIdx]++;
+      } else {
+        // Reserve 1 slot for any OTHER still-pending teammate in this group who has a guaranteed spin date
+        const otherGuaranteed = Number(e.id) !== Number(emp.id) ? getGuaranteedOptionForEmployee(e, options) : null;
+        if (otherGuaranteed && optIndexById[String(otherGuaranteed.id)] !== undefined) {
+          counts[optIndexById[String(otherGuaranteed.id)]]++;
+        } else {
+          pending++;
+        }
+      }
+    }
+
+    const solved = solveGroupRule(targetGroupKey, options, counts, pending);
+    const ruleMaxCapById = {};
+    const countsById = {};
+    for (let j = 0; j < k; j++) {
+      const optId = options[j].id;
+      weightsById[optId] = solved.weights[j] || 0;
+      countsById[optId] = counts[j];
+      ruleMaxCapById[optId] = Number.isFinite(solved.ruleMaxCap[j]) ? solved.ruleMaxCap[j] : null;
+    }
+
+    return { weightsById, guaranteedOpt: null, ruleMaxCapById, countsById, pending };
   }
 
   function formatRangeTarget(minVal, maxVal) {
@@ -1683,7 +1827,71 @@
     return sectors[sectors.length - 1];
   }
 
-  function pickWinningSector(sectors) {
+  function pickWinningSector(sectors, emp = null, excludeEmpId = null) {
+    if (emp) {
+      const guaranteedOpt = getGuaranteedOptionForEmployee(emp, state.options);
+      if (guaranteedOpt) {
+        const matching = sectors.filter(s => String(s.optionId) === String(guaranteedOpt.id));
+        if (matching.length > 0) {
+          return matching[cryptoRandomInt(matching.length)];
+        }
+      }
+
+      if (state.mode === 'area_balanced') {
+        const eff = getEffectiveSpinWeightsForEmployee(
+          emp,
+          state.options,
+          state.employees,
+          state.assignments,
+          state.pendingSpins,
+          excludeEmpId
+        );
+        const countByOpt = {};
+        for (const s of sectors) countByOpt[s.optionId] = (countByOpt[s.optionId] || 0) + 1;
+        const secWeights = sectors.map(s => {
+          const w = eff.weightsById[s.optionId] || 0;
+          const n = countByOpt[s.optionId] || 1;
+          return w > 1e-9 ? (w / n) : 0;
+        });
+        const totalW = secWeights.reduce((a, b) => a + b, 0);
+        if (totalW > 1e-9) {
+          const r = cryptoRandomFloat() * totalW;
+          let acc = 0;
+          for (let i = 0; i < sectors.length; i++) {
+            acc += secWeights[i];
+            if (r < acc && secWeights[i] > 0) return sectors[i];
+          }
+          for (let i = sectors.length - 1; i >= 0; i--) {
+            if (secWeights[i] > 0) return sectors[i];
+          }
+        }
+      } else if (state.mode === 'balanced') {
+        const counts = getAssignedCountsMap(excludeEmpId, true);
+        for (const other of state.employees) {
+          if (Number(other.id) === Number(emp.id)) continue;
+          if (state.assignments[other.id] || (state.pendingSpins && state.pendingSpins[other.id])) continue;
+          const og = getGuaranteedOptionForEmployee(other, state.options);
+          if (og && counts[og.id] !== undefined) counts[og.id]++;
+        }
+        const countByOpt = {};
+        for (const s of sectors) countByOpt[s.optionId] = (countByOpt[s.optionId] || 0) + 1;
+        const secWeights = sectors.map(s => {
+          const q = Math.max(1, Number(state.quotas[s.optionId]) || 1);
+          const rem = Math.max(0, q - (counts[s.optionId] || 0));
+          return rem > 0 ? (rem / (countByOpt[s.optionId] || 1)) : 0;
+        });
+        const totalW = secWeights.reduce((a, b) => a + b, 0);
+        if (totalW > 1e-9) {
+          const r = cryptoRandomFloat() * totalW;
+          let acc = 0;
+          for (let i = 0; i < sectors.length; i++) {
+            acc += secWeights[i];
+            if (r < acc && secWeights[i] > 0) return sectors[i];
+          }
+        }
+      }
+    }
+
     if (state.mode === 'equal') return sectors[cryptoRandomInt(sectors.length)];
     const r = cryptoRandomFloat();
     let acc = 0;
@@ -2606,8 +2814,12 @@
     updateSpinButtons();
 
     const excludeEmpId = spinNumber === 2 ? emp.id : null;
-    const sectors = getWheelSectors(emp.id, excludeEmpId);
-    const winningSector = pickWinningSector(sectors);
+    let sectors = getWheelSectors(emp.id, excludeEmpId);
+    const guaranteedOpt = getGuaranteedOptionForEmployee(emp, state.options);
+    if (guaranteedOpt && !sectors.some(s => String(s.optionId) === String(guaranteedOpt.id))) {
+      sectors = buildEqualSectors(state.options);
+    }
+    const winningSector = pickWinningSector(sectors, emp, excludeEmpId);
 
     const u = 0.18 + cryptoRandomFloat() * 0.64;
     const targetLocalAngle = winningSector.startAngle + u * (winningSector.endAngle - winningSector.startAngle);
@@ -2793,8 +3005,8 @@
     btnSecond.disabled = true;
     btnKeep.querySelector('span').textContent = 'Confirmando...';
 
-    // When connected to Apps Script < v4, re-check latest remote state & quota before committing
-    if (syncUrl && remoteScriptVersion < 4) {
+    // When connected to Apps Script < v7, re-check latest remote state & quota before committing
+    if (syncUrl && remoteScriptVersion < 7) {
       await syncFromDrive({ silent: true });
       if (state.assignments[emp.id]) {
         delete state.pendingSpins[emp.id];
@@ -2806,9 +3018,10 @@
         return;
       }
       if (state.mode === 'area_balanced') {
-        const eqModel = computeEquityModel(state.options, state.employees, state.assignments, state.pendingSpins, emp.id);
-        const areaObj = eqModel.byArea[emp.area];
-        if (areaObj && areaObj.pending > 0 && (areaObj.weightsById[opt.id] || 0) <= 1e-9) {
+        const eff = getEffectiveSpinWeightsForEmployee(emp, state.options, state.employees, state.assignments, state.pendingSpins, emp.id);
+        const optCap = eff.ruleMaxCapById ? eff.ruleMaxCapById[opt.id] : null;
+        const hitsCap = optCap !== null && optCap !== undefined && (eff.countsById[opt.id] || 0) >= optCap;
+        if (hitsCap || (eff.pending > 0 && (eff.weightsById[opt.id] || 0) <= 1e-9)) {
           delete state.pendingSpins[emp.id];
           saveState();
           activeDecisionEmpId = null;
@@ -3700,7 +3913,8 @@
       if (tableDateFilter === 'PENDING' && rec) return false;
       if (tableDateFilter === 'MANUAL' && (!rec || !rec.isManual)) return false;
       if (!['ALL', 'ASSIGNED', 'PENDING', 'MANUAL'].includes(tableDateFilter)) {
-        if (!rec || String(rec.optionId) !== String(tableDateFilter)) return false;
+        const resolvedOpt = rec ? resolveAssignedOption(rec) : null;
+        if (!resolvedOpt || String(resolvedOpt.id) !== String(tableDateFilter)) return false;
       }
       return true;
     });
@@ -4479,7 +4693,25 @@
         state.history = buildPreRegisteredHistory(state.options);
         lastSpinRecord = null;
         saveState();
-        if (syncUrl) await postToDrive({ action: 'resetAll' });
+        if (syncUrl) {
+          await postToDrive({ action: 'resetAll' });
+          if (remoteScriptVersion < 6) {
+            await postToDrive({
+              action: 'pushLocalProgress',
+              assignments: state.assignments,
+              options: state.options.map(o => ({
+                id: o.id,
+                label: o.label,
+                shortLabel: o.shortLabel,
+                days: o.days,
+                seasonTag: o.seasonTag,
+                colorIndex: o.colorIndex,
+                bg: o.pillBg,
+                fg: o.pillText
+              }))
+            });
+          }
+        }
         document.getElementById('resultBanner').classList.add('hidden');
         document.getElementById('liveTicker').textContent = 'Listo para sortear';
         const firstPend = state.employees.find(e => !state.assignments[e.id]);
